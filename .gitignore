@@ -90,6 +90,8 @@ volumes/minio/
 
 # config files
 *_config.yaml
+.env
+
 
 # test
 test/
