@@ -16,3 +16,5 @@ tqdm
 timm
 pymilvus[milvus_lite]
 pydantic_settings
+passlib
+jwt
