@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # Milvus database
+  milvus-standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.3.0
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+    - seccomp:unconfined
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - ./volumes/milvus:/var/lib/milvus
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+
+  # Etcd for Milvus
+  etcd:
+    container_name: etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ./volumes/etcd:/etcd-data
+    command: >
+      etcd 
+      -advertise-client-urls=http://127.0.0.1:2379
+      -listen-client-urls http://0.0.0.0:2379
+      -listen-peer-urls http://0.0.0.0:2380
+      -initial-cluster default=http://127.0.0.1:2380
+      -initial-advertise-peer-urls http://127.0.0.1:2380
+      -initial-cluster-token etcd-cluster-1
+      -initial-cluster-state new
+      -data-dir /etcd-data
+    restart: on-failure
+
+  # MinIO for storage
+  minio:
+    container_name: minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    command: minio server /minio_data --console-address ":9001"
+    volumes:
+      - ./volumes/minio:/minio_data
+    expose:
+      - "9000"
+      - "9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    restart: on-failure
+
+  # Backend API service
+  backend:
+    container_name: face-recognition-backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    depends_on:
+      - milvus-standalone
+    environment:
+      - MILVUS_HOST=milvus-standalone
+      - MILVUS_PORT=19530
+      - SECRET_KEY=supersecretkeychangeinproduction
+    restart: on-failure
+
+  # Frontend service
+  frontend:
+    container_name: face-recognition-frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    depends_on:
+      - backend
+    restart: on-failure
