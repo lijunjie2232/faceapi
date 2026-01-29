@@ -56,12 +56,6 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import {
-  Camera,
-  VideoCamera,
-  SwitchButton,
-  PictureRounded
-} from '@element-plus/icons-vue'
 import { ElButton, ElIcon, ElProgress, ElAlert, ElEmpty } from 'element-plus'
 
 // Define emitted events
@@ -103,7 +97,6 @@ onMounted(async () => {
     // Load face-api.js models
     await loadModels()
   } catch (error) {
-    console.error('Error loading face-api.js:', error)
     loadingModels.value = false
   }
 })
@@ -111,11 +104,6 @@ onMounted(async () => {
 // Load face-api.js models
 const loadModels = async () => {
   try {
-    // Calculate progress as each model loads
-    const modelUrls = {
-      faceDetection: '/models/weights-tiny_face_detector_model-weights_manifest.json',
-    }
-
     // Update progress as each model loads
     modelLoadProgress.value = 25
     await faceapi.nets.tinyFaceDetector.loadFromUri('/models')
@@ -125,7 +113,6 @@ const loadModels = async () => {
       loadingModels.value = false
     }, 500)
   } catch (err) {
-    console.error('Error loading models:', err)
 
     // Try loading from CDN as fallback
     try {
@@ -136,7 +123,6 @@ const loadModels = async () => {
         loadingModels.value = false
       }, 500)
     } catch (fallbackErr) {
-      console.error('Error loading models from CDN:', fallbackErr)
       loadingModels.value = false
     }
   }
@@ -173,7 +159,6 @@ const startCamera = async () => {
       setTimeout(startFaceDetectionLoop, 500)
     }
   } catch (err) {
-    console.error("Error accessing camera:", err)
     alert("Could not access the camera. Please check permissions.")
   }
 }
@@ -276,7 +261,6 @@ const startFaceDetectionLoop = async () => {
       detectionInterval = setTimeout(startFaceDetectionLoop, 500) // ~2 FPS
     }
   } catch (error) {
-    console.error('Face detection error:', error)
     // Retry after a short delay
     if (isCameraOpen.value) {
       detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
