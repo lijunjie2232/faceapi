@@ -1,0 +1,7 @@
+
+# frontend
+package.json
+yarn.lock
+node_modules/
+dist/
+public/models/

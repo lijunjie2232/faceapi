@@ -2,9 +2,9 @@
 FROM node:18-alpine AS build-stage
 WORKDIR /app
 COPY package*.json ./
-RUN npm install
+RUN pnpm install
 COPY . .
-RUN npm run build
+RUN pnpm build
 
 # Production stage
 FROM nginx:stable-alpine AS production-stage
