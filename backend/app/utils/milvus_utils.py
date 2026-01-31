@@ -1,6 +1,7 @@
-from ..db import get_milvus_client
-from typing import Optional
 import asyncio
+from typing import Optional
+
+from ..db import get_milvus_client
 
 # Dictionary to store locks for each collection
 _collection_locks = {}

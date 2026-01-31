@@ -61,12 +61,12 @@ def is_valid_password(password: str, min_length: int = 8) -> bool:
 
 if __name__ == "__main__":
     # Example usage
-    password = "MySecurePassword123"
+    EXAMPLE_PASSWORD = "MySecurePassword123"
 
-    print(f"Original password: {password}")
+    print(f"Original password: {EXAMPLE_PASSWORD}")
 
     # Hash the password
-    hashed = hash_password(password)
+    hashed = hash_password(EXAMPLE_PASSWORD)
     print(f"Hashed password: {hashed}")
 
     # Verify the password

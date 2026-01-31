@@ -11,6 +11,7 @@ from fastapi.security import OAuth2PasswordBearer
 from passlib.context import CryptContext
 
 from ..core import _CONFIG_
+from ..models import UserModel
 
 # OAuth2 scheme for token authentication
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{_CONFIG_.API_V1_STR}/login")
@@ -95,4 +96,26 @@ async def get_current_active_user(current_user: str = Depends(get_current_user))
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
         )
-    return current_user
+    user = await UserModel.get_or_none(id=current_user)
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="User is inactive"
+        )
+    return user
+
+
+async def get_current_admin_user(current_user: str = Depends(get_current_user)):
+    """
+    Get the current admin user, checking that they are an admin.
+    This function is used for admin-only endpoints.
+    Parameters:
+    - current_user: The user identifier from the token
+    Returns:
+    - The current admin user
+    Raises:
+    - HTTPException: If the user is not an admin
+    """
+    user = await UserModel.get(id=current_user)
+    if not user.is_admin:
+        raise HTTPException(status_code=403, detail="Not an admin")
+    return user
