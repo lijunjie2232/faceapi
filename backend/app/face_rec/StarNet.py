@@ -1,9 +1,12 @@
+from pathlib import PosixPath
+
 import cv2
 import numpy as np
 import torch
 import torch.nn as nn
 from timm.models.layers import DropPath, trunc_normal_
-from pathlib import PosixPath
+
+from .FaceRecModel import register_model
 
 
 class ConvBN(torch.nn.Sequential):
@@ -144,6 +147,7 @@ def inference(net, img, device="cuda", to_array=True):
     return feat
 
 
+@register_model("star_s1")
 def get_s1(
     weight="model.pt",
     train=False,
@@ -160,6 +164,7 @@ def get_s1(
     return model.train() if train else model.eval()
 
 
+@register_model("star_s2")
 def get_s2(
     weight="model.pt",
     train=False,
@@ -176,6 +181,7 @@ def get_s2(
     return model.train() if train else model.eval()
 
 
+@register_model("star_s3")
 def get_s3(
     weight="model.pt",
     train=False,
@@ -192,6 +198,7 @@ def get_s3(
     return model.train() if train else model.eval()
 
 
+@register_model("star_s4")
 def get_s4(
     weight="model.pt",
     train=False,
