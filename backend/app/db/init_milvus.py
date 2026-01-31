@@ -1,6 +1,9 @@
-import logging
-from multiprocessing import connection
-from typing import Optional
+"""
+Database initialization module for Milvus.
+
+This module handles the initialization and setup of Milvus vector database
+for storing and retrieving face feature vectors.
+"""
 
 from loguru import logger
 from pymilvus import (
@@ -20,12 +23,12 @@ FACE_FEATURES_COLLECTION = "face_features"
 USER_ACCOUNTS_COLLECTION = "user_accounts"
 
 # Global Milvus client instance
-milvus_client = None
+MILVUS_CLIENT = None
 
 
 async def init_db():
     """Initialize database connections and create collections if they don't exist"""
-    global milvus_client
+    global MILVUS_CLIENT
 
     try:
         # First connect without database to create the database if it doesn't exist
@@ -64,7 +67,7 @@ async def init_db():
         )
 
         # Initialize the global Milvus client connected to the specific database
-        milvus_client = MilvusClient(
+        MILVUS_CLIENT = MilvusClient(
             uri=f"http://{_CONFIG_.MILVUS_HOST}:{_CONFIG_.MILVUS_PORT}",
             user=_CONFIG_.MILVUS_USER,
             password=_CONFIG_.MILVUS_PASSWORD,
@@ -118,7 +121,7 @@ async def create_face_features_collection():
     }
 
     # Create index - this is a synchronous operation in pymilvus
-    result = face_features_collection.create_index(
+    await face_features_collection.create_index(
         field_name="feature_vector",
         index_params=index_params,
     )
@@ -130,7 +133,6 @@ async def create_face_features_collection():
 
 def get_milvus_client():
     """Return the global Milvus client instance"""
-    global milvus_client
-    if milvus_client is None:
+    if MILVUS_CLIENT is None:
         raise RuntimeError("Milvus client not initialized. Call init_db() first.")
-    return milvus_client
+    return MILVUS_CLIENT
