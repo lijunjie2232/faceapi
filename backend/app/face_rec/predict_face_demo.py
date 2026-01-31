@@ -1,12 +1,13 @@
-from typing import Callable
-import numpy as np
 import argparse
-from pathlib import Path
-from pymilvus import MilvusClient, DataType
-from StarNet import get_s3, inference, faceDetector
-import torch
 import re
+from pathlib import Path
+from typing import Callable
+
+import numpy as np
+import torch
 import yaml
+from pymilvus import DataType, MilvusClient
+from StarNet import faceDetector, get_s3, inference
 
 # Default device and model configuration
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
@@ -17,12 +18,12 @@ def load_milvus_config(config_path="milvus_config.yaml"):
     """
     Load Milvus configuration from YAML file
     """
-    with open(config_path, 'r') as file:
+    with open(config_path, "r") as file:
         config = yaml.safe_load(file)
-    return config['milvus']
+    return config["milvus"]
 
 
-def load_model(get_sn:Callable, model_path:Path, device:str|torch.device):
+def load_model(get_sn: Callable, model_path: Path, device: str | torch.device):
     """
     Load the face recognition model and initialize the Milvus client
     """
@@ -39,8 +40,8 @@ def init_milvus(client):
 
     # Initialize Milvus client
     client = MilvusClient(
-        uri=config['uri'],
-        token=config['token'],
+        uri=config["uri"],
+        token=config["token"],
     )
 
     if "test" not in client.list_databases():
