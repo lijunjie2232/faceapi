@@ -7,7 +7,7 @@ for the application, including database connections, model parameters, and secur
 
 import os
 
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Config(BaseSettings):
@@ -86,8 +86,14 @@ class Config(BaseSettings):
         "https://localhost:8080",
     ]
 
-    class Config:
-        """Pydantic configuration class to define env file settings."""
+    # class Config:
+    #     """Pydantic configuration class to define env file settings."""
 
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    #     env_file = ".env"
+    #     env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_file=(".env", ".env.prod"),
+        env_file_encoding="utf-8",
+        yaml_file=("config.yaml", "config_prod.yaml"),
+        yaml_file_encoding="utf-8",
+    )
