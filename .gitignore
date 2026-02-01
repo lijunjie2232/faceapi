@@ -91,6 +91,9 @@ volumes/minio/
 # config files
 *_config.yaml
 .env
+config.yaml
+config.json
+config.toml
 
 # db
 *.sqlite3*
