@@ -35,7 +35,8 @@ async def list_users_service(skip: int = 0, limit: int = 100):
             is_active=user_obj.is_active,
             created_at=user_obj.created_at,
             updated_at=user_obj.updated_at,
-            head_pic=user_obj.head_pic,
+            # head_pic=user_obj.head_pic,
+            head_pic="1" if user_obj.head_pic else None,
             is_admin=user_obj.is_admin,
         )
         users.append(user)
