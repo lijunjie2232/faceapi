@@ -236,7 +236,7 @@ const startFaceDetectionLoop = async () => {
     }
 
     // Clear the canvas before drawing
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    // ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Scale the detections to match the display size
     if (detections.length > 0) {
@@ -255,26 +255,27 @@ const startFaceDetectionLoop = async () => {
         const height = box.height * scaleY
 
         // Adjust x coordinate if flipped
-        if (flipEnabled.value) {
-          x = canvas.width - x - width
-        }
+        // if (flipEnabled.value) {
+        //   x = canvas.width - x - width
+        // }
 
         // Draw rectangle with gradient
-        drawRectangleWithGradient(ctx, x, y, width, height)
+        drawEllipseWithGradient(ctx, x + width/2, y + height/2, width/2, height/2)
       })
     }
 
     // Continue detecting faces if camera is still active
     if (isCameraOpen.value) {
-      // Using requestAnimationFrame for smooth animation
-      detectionInterval = requestAnimationFrame(startFaceDetectionLoop)
+      // Using setTimeout instead of requestAnimationFrame to control frequency
+      // This prevents emitting events too frequently
+      detectionInterval = setTimeout(startFaceDetectionLoop, 500) // ~2 FPS
     }
   } catch (error) {
     console.error("Error during face detection:", error)
     // Retry after a short delay
-    if (isCameraOpen.value) {
-      detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
-    }
+    // if (isCameraOpen.value) {
+    //   detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
+    // }
   }
 }
 
@@ -365,44 +366,50 @@ onUnmounted(() => {
   stopCamera()
 })
 
-// Function to draw rectangle with green border
-function drawRectangleWithGradient(ctx, x, y, width, height) {
-  // Draw a green rectangle border for face detection
-  ctx.save()
+// Function to draw ellipse with green border
+function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
+  // Draw a green ellipse border for face detection
+  ctx.save();
 
-  // Draw the green border for the rectangle
-  ctx.strokeStyle = '#00ff00' // Bright green color
-  ctx.lineWidth = 3
-  ctx.beginPath()
-  ctx.rect(x, y, width, height)
-  ctx.stroke()
+  // Draw the green border for the ellipse
+  ctx.strokeStyle = '#00ff00'; // Bright green color
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
+  ctx.stroke();
 
   // Add L-shaped corners for better visibility
-  ctx.beginPath()
+  ctx.beginPath();
 
   // Top-left corner
-  ctx.moveTo(x, y + 10)
-  ctx.lineTo(x, y)
-  ctx.lineTo(x + 10, y)
+  ctx.moveTo(centerX - radiusX, centerY - radiusY + 10);
+  ctx.lineTo(centerX - radiusX, centerY - radiusY);
+  ctx.lineTo(centerX - radiusX + 10, centerY - radiusY);
 
   // Top-right corner
-  ctx.moveTo(x + width - 10, y)
-  ctx.lineTo(x + width, y)
-  ctx.lineTo(x + width, y + 10)
+  ctx.moveTo(centerX + radiusX - 10, centerY - radiusY);
+  ctx.lineTo(centerX + radiusX, centerY - radiusY);
+  ctx.lineTo(centerX + radiusX, centerY - radiusY + 10);
 
   // Bottom-left corner
-  ctx.moveTo(x, y + height - 10)
-  ctx.lineTo(x, y + height)
-  ctx.lineTo(x + 10, y + height)
+  ctx.moveTo(centerX - radiusX, centerY + radiusY - 10);
+  ctx.lineTo(centerX - radiusX, centerY + radiusY);
+  ctx.lineTo(centerX - radiusX + 10, centerY + radiusY);
 
   // Bottom-right corner
-  ctx.moveTo(x + width - 10, y + height)
-  ctx.lineTo(x + width, y + height)
-  ctx.lineTo(x + width, y + height - 10)
+  ctx.moveTo(centerX + radiusX - 10, centerY + radiusY);
+  ctx.lineTo(centerX + radiusX, centerY + radiusY);
+  ctx.lineTo(centerX + radiusX, centerY + radiusY - 10);
 
-  ctx.stroke()
+  ctx.stroke();
 
-  ctx.restore()
+  // Draw a small circle at the center of the ellipse
+  ctx.beginPath();
+  ctx.fillStyle = '#00ff00'; // Same bright green color
+  ctx.arc(centerX, centerY, 4, 0, Math.PI * 2); // Small circle with radius 4
+  ctx.fill();
+
+  ctx.restore();
 }
 </script>
 
