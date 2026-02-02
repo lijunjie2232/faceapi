@@ -365,7 +365,7 @@ const captureImage = () => {
 // Function to retake image - reset captured image and restart camera
 const retakeImage = () => {
   capturedImage.value = null
-  // We could restart the camera here if needed
+  startCamera()  // Restart the camera
 }
 
 // Function to confirm and send the image
