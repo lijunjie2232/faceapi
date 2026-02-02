@@ -2,8 +2,8 @@
   <el-dialog v-model="dialogVisible" title="Face Detection" width="700px" :before-close="handleClose"
     class="face-detection-popout">
     <div class="camera-controls">
-      <el-button type="primary" @click="toggleCamera" :loading="loadingModels" :disabled="loadingModels"
-        class="camera-toggle-btn">
+      <el-button type="primary" @click="toggleCamera" :loading="loadingModels" 
+        :disabled="loadingModels || capturedImage" class="camera-toggle-btn">
         <el-icon>
           <VideoCamera v-if="isCameraOpen" />
           <Camera v-else />
@@ -11,7 +11,8 @@
         <span>{{ isCameraOpen ? 'Stop Camera' : 'Start Camera' }}</span>
       </el-button>
 
-      <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" class="flip-btn">
+      <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" 
+        :disabled="capturedImage" class="flip-btn">
         <el-icon>
           <Switch />
         </el-icon>
@@ -158,7 +159,7 @@ const loadFaceDetectionModels = async () => {
 
     // Try loading from CDN as fallback
     try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights')
+      await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhochacks/face-api.js/master/weights')
 
       modelLoadProgress.value = 100
       setTimeout(() => {
