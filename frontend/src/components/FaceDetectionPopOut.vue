@@ -19,7 +19,14 @@
       </el-button>
     </div>
 
-    <div v-show="isCameraOpen" class="camera-container">
+    <!-- Show captured image preview when available -->
+    <div v-if="capturedImage" class="image-preview-container">
+      <h3>Confirm Image</h3>
+      <img :src="capturedImage" alt="Captured face image" class="captured-image-preview" />
+      <p>Please confirm to upload this image</p>
+    </div>
+
+    <div v-show="isCameraOpen && !capturedImage" class="camera-container">
       <div class="video-wrapper">
         <video ref="videoRef" class="camera-video" :style="videoStyle" autoplay playsinline></video>
         <canvas ref="canvasRef" class="detection-canvas" :style="canvasStyle"></canvas>
@@ -31,15 +38,27 @@
       </div>
     </div>
 
-    <div v-if="!isCameraOpen && !loadingModels" class="placeholder-container">
+    <div v-if="!isCameraOpen && !loadingModels && !capturedImage" class="placeholder-container">
       <el-empty description="Camera is not active" :image-size="150">
         <p>Click "Start Camera" to begin face detection</p>
       </el-empty>
     </div>
 
+    <!-- Different button actions depending on state -->
     <div class="button-actions">
-      <el-button @click="handleClose">Cancel</el-button>
-      <el-button type="success" @click="captureImage" :disabled="!isCameraOpen || loadingModels" class="capture-btn">
+      <el-button @click="handleClose">{{ capturedImage ? 'Cancel' : 'Close' }}</el-button>
+      
+      <div class="confirmation-buttons" v-if="capturedImage">
+        <el-button @click="retakeImage">Retake</el-button>
+        <el-button type="success" @click="confirmAndSendImage" class="confirm-btn">
+          <el-icon>
+            <Check />
+          </el-icon>
+          <span>Confirm & Upload</span>
+        </el-button>
+      </div>
+      
+      <el-button v-else type="success" @click="captureImage" :disabled="!isCameraOpen || loadingModels" class="capture-btn">
         <el-icon>
           <Camera />
         </el-icon>
@@ -52,7 +71,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { ElDialog, ElButton, ElIcon, ElProgress, ElEmpty, ElMessage } from 'element-plus'
-import { VideoCamera, Camera, Switch } from '@element-plus/icons-vue'
+import { VideoCamera, Camera, Switch, Check } from '@element-plus/icons-vue'
 import axios from 'axios'
 
 // Define props and emits
@@ -85,6 +104,7 @@ const isCameraOpen = ref(false)
 const loadingModels = ref(true)
 const modelLoadProgress = ref(0)
 const flipEnabled = ref(false)
+const capturedImage = ref(null) // Store the captured image
 let stream = null
 let faceapi = null
 let detectionInterval = null
@@ -299,6 +319,7 @@ const handleFaceCaptured = async (imageData, token) => {
     // Check if response has the expected structure with 'code' field
     if (response.data.code === 200 || response.data.success) {
       ElMessage.success(response.data.message || 'Face image updated successfully');
+      emit('faceCaptured', imageData); // Emit event with captured image data
     } else {
       ElMessage.error(response.data.message || 'Failed to update face image');
     }
@@ -334,17 +355,31 @@ const captureImage = () => {
   // Convert to image data URL
   const imageDataUrl = tempCanvas.toDataURL('image/jpeg')
   
-  // Call handleFaceCaptured to process the image with the token
-  handleFaceCaptured(imageDataUrl, props.token)
+  // Store the captured image for confirmation
+  capturedImage.value = imageDataUrl
+  
+  // Stop the camera but keep the dialog open
+  stopCamera()
+}
 
-  // Close the dialog after capturing
-  handleClose()
+// Function to retake image - reset captured image and restart camera
+const retakeImage = () => {
+  capturedImage.value = null
+  // We could restart the camera here if needed
+}
+
+// Function to confirm and send the image
+const confirmAndSendImage = () => {
+  if (capturedImage.value && props.token) {
+    handleFaceCaptured(capturedImage.value, props.token)
+    handleClose() // Close the dialog after sending
+  }
 }
 
 // Stop camera
 const stopCamera = () => {
   if (detectionInterval) {
-    cancelAnimationFrame(detectionInterval)
+    clearTimeout(detectionInterval) // Use clearTimeout instead of cancelAnimationFrame
     detectionInterval = null
   }
 
@@ -358,6 +393,7 @@ const stopCamera = () => {
 // Handle dialog close
 const handleClose = () => {
   stopCamera()
+  capturedImage.value = null // Reset captured image
   dialogVisible.value = false
 }
 
@@ -426,6 +462,20 @@ function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
   flex-wrap: wrap;
 }
 
+.image-preview-container {
+  text-align: center;
+  margin: 20px 0;
+}
+
+.captured-image-preview {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  margin: 10px auto;
+  display: block;
+}
+
 .camera-container {
   position: relative;
   display: flex;
@@ -469,6 +519,11 @@ function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
   margin-top: 20px;
 }
 
+.confirmation-buttons {
+  display: flex;
+  gap: 10px;
+}
+
 .capture-btn {
   background-color: #67c23a;
   /* Green color */
@@ -483,6 +538,27 @@ function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
 
 .capture-btn:hover,
 .capture-btn:focus {
+  background-color: #5daf34;
+  /* Darker green on hover */
+  border-color: #5daf34;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
+}
+
+.confirm-btn {
+  background-color: #67c23a;
+  /* Green color */
+  border-color: #67c23a;
+  /* Green border */
+  color: white;
+  /* White text */
+  padding: 12px 20px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.confirm-btn:hover,
+.confirm-btn:focus {
   background-color: #5daf34;
   /* Darker green on hover */
   border-color: #5daf34;
