@@ -58,14 +58,23 @@
 
             <!-- Head Pic Field -->
             <el-form-item label="Face Image:">
-              <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
-                @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
-                class="face-image-btn">
-                <span class="button-text">
-                  {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
-                    'Face is set' : 'Face is not set') }}
-                </span>
-              </el-button>
+              <div class="head-pic-container">
+                <div v-if="userInfo.head_pic" class="head-pic-preview">
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview" class="head-pic-image" />
+                </div>
+                <div v-else class="head-pic-placeholder">
+                  Image not uploaded
+                </div>
+                
+                <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
+                  @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
+                  class="face-image-btn">
+                  <span class="button-text">
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
+                      'Face is set' : 'Face is not set') }}
+                  </span>
+                </el-button>
+              </div>
             </el-form-item>
           </el-form>
 
@@ -106,14 +115,23 @@
 
             <!-- Head Pic Field in Edit Mode -->
             <el-form-item label="Face Image:">
-              <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
-                @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
-                class="face-image-btn">
-                <span class="button-text">
-                  {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
-                    'Face is set' : 'Face is not set') }}
-                </span>
-              </el-button>
+              <div class="head-pic-container">
+                <div v-if="userInfo.head_pic" class="head-pic-preview">
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview" class="head-pic-image" />
+                </div>
+                <div v-else class="head-pic-placeholder">
+                  Image not uploaded
+                </div>
+                
+                <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
+                  @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
+                  class="face-image-btn">
+                  <span class="button-text">
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
+                      'Face is set' : 'Face is not set') }}
+                  </span>
+                </el-button>
+              </div>
             </el-form-item>
           </el-form>
         </div>
@@ -449,5 +467,44 @@ h2 {
 /* Hover text when hovering */
 .face-image-btn:hover .button-text::before {
   content: attr(data-hover-text);
+}
+
+.head-pic-container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.head-pic-preview {
+  border: 1px solid #dcdfe6;
+  border-radius: 6px;
+  overflow: hidden;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.head-pic-image {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.head-pic-placeholder {
+  padding: 40px 20px;
+  text-align: center;
+  color: #909399;
+  font-size: 14px;
+  border: 1px dashed #dcdfe6;
+  border-radius: 6px;
+  width: 120px;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 </style>
