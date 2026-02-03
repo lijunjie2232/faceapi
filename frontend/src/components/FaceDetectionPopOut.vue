@@ -303,16 +303,36 @@ const startFaceDetectionLoop = async () => {
 // Function to handle face captured from pop-out window
 const handleFaceCaptured = async (imageData, token) => {
   try {
+    // Create FormData to send image as form data
+    const formData = new FormData();
+    
+    // Convert base64 image data to blob and append to form data
+    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+    const byteArrays = [];
+    
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+      const byteNumbers = new Array(slice.length);
+      
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+      
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+    
+    const blob = new Blob(byteArrays, { type: 'image/jpeg' });
+    formData.append('image', blob, 'face_image.jpg');
+
     // Upload the captured image to update the user's head pic
     const response = await axios.put(
-      `${API_BASE_URL}/api/v1/user/me`,
-      {
-        head_pic: imageData // Assuming the backend accepts base64 image data
-      },
+      `${API_BASE_URL}/api/v1/face/me`,
+      formData,
       {
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'multipart/form-data'
         }
       }
     );
