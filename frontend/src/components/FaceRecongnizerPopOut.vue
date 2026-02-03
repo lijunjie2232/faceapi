@@ -2,8 +2,8 @@
   <el-dialog v-model="dialogVisible" title="Face Recognition" width="700px" :before-close="handleClose"
     class="face-detection-popout">
     <div class="camera-controls">
-      <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" 
-        :disabled="!isCameraOpen" class="flip-btn">
+      <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" :disabled="!isCameraOpen"
+        class="flip-btn">
         <el-icon>
           <Switch />
         </el-icon>
@@ -31,11 +31,7 @@
 
     <!-- Status message when verifying faces -->
     <div v-if="verifyingFace" class="verifying-message">
-      <el-alert
-        title="Verifying face, please wait..."
-        type="info"
-        :closable="false"
-        show-icon>
+      <el-alert title="Verifying face, please wait..." type="info" :closable="false" show-icon>
       </el-alert>
     </div>
 
@@ -205,7 +201,7 @@ let ctx = null
 
 // Start face detection loop for real-time processing
 const startFaceDetectionLoop = async () => {
-  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceapi) return
+  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceapi || !dialogVisible.value) return
 
   try {
     // Get the display dimensions of the video element
@@ -274,9 +270,9 @@ const startFaceDetectionLoop = async () => {
         }
 
         // Draw rectangle with gradient
-        drawEllipseWithGradient(ctx, x + width/2, y + height/2, width/2, height/2)
+        drawEllipseWithGradient(ctx, x + width / 2, y + height / 2, width / 2, height / 2)
       })
-      
+
       // If we detect a face and are not currently verifying, send it to the server
       if (!verifyingFace.value) {
         // Capture the current frame and send it for verification
@@ -296,7 +292,7 @@ const startFaceDetectionLoop = async () => {
 
         // Convert to image data URL
         const imageDataUrl = tempCanvas.toDataURL('image/jpeg')
-        
+
         // Start verification process
         verifyFace(imageDataUrl)
       }
@@ -318,33 +314,33 @@ const startFaceDetectionLoop = async () => {
 // Function to verify face with server
 const verifyFace = async (imageDataUrl) => {
   if (verifyingFace.value) return // Skip if already verifying
-  
+
   verifyingFace.value = true
-  
+
   try {
     // Create FormData to send the image
     const formData = new FormData();
-    
+
     // Extract base64 data from data URL and convert to Blob
     const base64Data = imageDataUrl.split(',')[1];
     const byteCharacters = atob(base64Data);
     const byteArrays = [];
-    
+
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
       const slice = byteCharacters.slice(offset, offset + 512);
       const byteNumbers = new Array(slice.length);
-      
+
       for (let i = 0; i < slice.length; i++) {
         byteNumbers[i] = slice.charCodeAt(i);
       }
-      
+
       const byteArray = new Uint8Array(byteNumbers);
       byteArrays.push(byteArray);
     }
-    
+
     const blob = new Blob(byteArrays, { type: 'image/jpeg' });
     formData.append('image', blob, 'face_image.jpg');
-    
+
     // Send the captured image to the verification endpoint
     const response = await axios.post(
       `${API_BASE_URL}/api/v1/face/verify`,
@@ -357,19 +353,19 @@ const verifyFace = async (imageDataUrl) => {
     );
 
     // Check if response has the expected structure with 'code' field
-    if (response.data.code === 200 || response.data.success) {
+    if (response.data.recognized === true || response.data.code === 200 || response.data.success) {
       // Store the token in localStorage
-      localStorage.setItem('userToken', response.data.token || response.data.data?.token)
-      
+      localStorage.setItem('token', response.data.token)
+
       ElMessage.success(response.data.message || 'Face recognition successful');
-      
+
       // Emit event with verification result
       emit('faceVerified', { 
         success: true, 
-        token: response.data.token || response.data.data?.token,
-        userData: response.data.data?.user || null
+        token: response.data.token,
+        token_type: response.data.token_type,
       });
-      
+
       // Close the dialog after successful verification
       handleClose()
     } else {
@@ -378,7 +374,7 @@ const verifyFace = async (imageDataUrl) => {
     }
   } catch (error) {
     console.error('Error during face verification:', error);
-    
+
     if (error.response?.data?.message) {
       ElMessage.error(error.response.data.message);
     } else {
@@ -387,7 +383,7 @@ const verifyFace = async (imageDataUrl) => {
   } finally {
     // Reset the verifying flag to allow next verification
     verifyingFace.value = false
-    
+
     // Continue detection loop if camera is still open
     if (isCameraOpen.value) {
       detectionInterval = setTimeout(startFaceDetectionLoop, 500)
