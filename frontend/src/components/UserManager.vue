@@ -125,6 +125,8 @@ import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+
 const users = ref([])
 const loading = ref(false)
 const submitting = ref(false)
@@ -172,8 +174,13 @@ onMounted(() => {
 const fetchUsers = async () => {
   loading.value = true
   try {
+    // Get token from localStorage and set in header
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
     const response = await axios.get(
-      `http://localhost:8000/api/v1/users/?skip=${(pagination.page - 1) * pagination.size}&limit=${pagination.size}`
+      `${API_BASE_URL}/api/v1/admin/users?skip=${(pagination.page - 1) * pagination.size}&limit=${pagination.size}`,
+      { headers }
     )
     
     if (response.data.success) {
@@ -227,28 +234,33 @@ const submitForm = async () => {
   
   try {
     let response
+    // Get token from localStorage and set in header
+    const token = localStorage.getItem('userToken');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
     
     if (userForm.id) {
       // Update existing user
       response = await axios.put(
-        `http://localhost:8000/api/v1/users/${userForm.id}`,
+        `${API_BASE_URL}/api/v1/users/${userForm.id}`,
         {
           username: userForm.username,
           email: userForm.email,
           full_name: userForm.full_name,
           ...(userForm.password && { password: userForm.password })
-        }
+        },
+        { headers }
       )
     } else {
       // Create new user
       response = await axios.post(
-        'http://localhost:8000/api/v1/users/',
+        `${API_BASE_URL}/api/v1/users/`,
         {
           username: userForm.username,
           email: userForm.email,
           full_name: userForm.full_name,
           password: userForm.password
-        }
+        },
+        { headers }
       )
     }
     
@@ -283,7 +295,11 @@ const deleteUser = async (userId) => {
       }
     )
     
-    await axios.delete(`http://localhost:8000/api/v1/users/${userId}`)
+    // Get token from localStorage and set in header
+    const token = localStorage.getItem('userToken');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    
+    await axios.delete(`${API_BASE_URL}/api/v1/users/${userId}`, { headers })
     ElMessage.success('User deleted successfully')
     fetchUsers()
   } catch (error) {
