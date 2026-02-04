@@ -20,23 +20,22 @@
               <el-table-column prop="username" label="Username" width="120"></el-table-column>
               <el-table-column prop="email" label="Email"></el-table-column>
               <el-table-column prop="full_name" label="Full Name" width="150"></el-table-column>
-              <el-table-column prop="head_pic" label="Avatar" width="100">
+              <el-table-column prop="head_pic" label="Face Data" width="120">
                 <template #default="scope">
-                  <el-avatar 
-                    v-if="scope.row.head_pic" 
-                    :src="`${API_BASE_URL}/api/v1/users/${scope.row.id}/avatar`"
+                  <el-button 
+                    :type="scope.row.head_pic === '1' ? 'success' : 'warning'"
                     size="small"
-                    shape="square"
+                    @click="openFaceDetection(scope.row)"
+                    @mouseenter="handleMouseEnter(scope.row.id)"
+                    @mouseleave="handleMouseLeave"
+                    plain
                   >
-                    {{ scope.row.full_name?.charAt(0) || scope.row.username?.charAt(0) }}
-                  </el-avatar>
-                  <el-avatar 
-                    v-else 
-                    size="small" 
-                    shape="square"
-                  >
-                    {{ scope.row.full_name?.charAt(0) || scope.row.username?.charAt(0) }}
-                  </el-avatar>
+                    <span>{{ 
+                      hoveredUserId === scope.row.id 
+                        ? 'Update/Add new' 
+                        : (scope.row.head_pic === '1' ? 'Face set' : 'No face') 
+                    }}</span>
+                  </el-button>
                 </template>
               </el-table-column>
               <el-table-column prop="is_admin" label="Role" width="100">
@@ -189,7 +188,8 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus } from '@element-plus/icons-vue'
+import { Plus, UserFilled, CirclePlus } from '@element-plus/icons-vue'
+import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -198,7 +198,12 @@ const loading = ref(false)
 const submitting = ref(false)
 const userFormRef = ref()
 const drawerVisible = ref(false)
+const faceDetectionVisible = ref(false)
+const currentUserToken = ref('')
+const selectedUserForFace = ref(null)
 const currentUserRole = ref(false) // 当前用户是否为管理员
+// 添加hover状态管理
+const hoveredUserId = ref(null)
 
 const userForm = reactive({
   id: undefined,
@@ -252,6 +257,7 @@ const fetchCurrentUser = async () => {
     const token = localStorage.getItem('userToken')
     if (!token) return
     
+    currentUserToken.value = token
     const headers = { 'Authorization': `Bearer ${token}` }
     const response = await axios.get(`${API_BASE_URL}/api/v1/users/me`, { headers })
     if (response.data.success) {
@@ -397,6 +403,36 @@ const submitForm = async () => {
   }
 }
 
+const openFaceDetection = (user) => {
+  selectedUserForFace.value = user
+  faceDetectionVisible.value = true
+}
+
+// 添加鼠标事件处理方法
+const handleMouseEnter = (userId) => {
+  hoveredUserId.value = userId
+}
+
+const handleMouseLeave = () => {
+  hoveredUserId.value = null
+}
+
+const handleFaceCaptured = async (imageData) => {
+  try {
+    // 更新用户列表中对应用户的人脸状态
+    const userIndex = users.value.findIndex(u => u.id === selectedUserForFace.value.id)
+    if (userIndex !== -1) {
+      users.value[userIndex].head_pic = '1' // 标记为已录入人脸数据
+    }
+    
+    ElMessage.success('Face data updated successfully')
+    selectedUserForFace.value = null
+  } catch (error) {
+    console.error('Error handling face capture:', error)
+    ElMessage.error('Failed to update face data')
+  }
+}
+
 const deleteUser = async (userId) => {
   try {
     await ElMessageBox.confirm(
@@ -485,5 +521,10 @@ const deleteUser = async (userId) => {
   background-color: #409eff;
   color: white;
   font-weight: 500;
+}
+
+/* 人脸按钮样式优化 */
+:deep(.el-button .el-icon) {
+  margin-right: 5px;
 }
 </style>
