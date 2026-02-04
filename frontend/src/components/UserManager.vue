@@ -23,7 +23,7 @@
               <el-table-column prop="head_pic" label="Face Data" width="120">
                 <template #default="scope">
                   <el-button 
-                    :type="scope.row.head_pic === '1' ? 'success' : 'warning'"
+                    :type="scope.row.head_pic === '1' ? 'success' : 'danger'"
                     size="small"
                     @click="openFaceDetection(scope.row)"
                     @mouseenter="handleMouseEnter(scope.row.id)"
@@ -32,8 +32,8 @@
                   >
                     <span>{{ 
                       hoveredUserId === scope.row.id 
-                        ? 'Update/Add new' 
-                        : (scope.row.head_pic === '1' ? 'Face set' : 'No face') 
+                        ? (scope.row.head_pic === '1' ? 'Update face' : 'Add face')
+                        : (scope.row.head_pic === '1' ? 'Face Added' : 'No face') 
                     }}</span>
                   </el-button>
                 </template>
