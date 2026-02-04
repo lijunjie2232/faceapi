@@ -5,35 +5,26 @@
         <div class="table-container">
           <div class="header-actions">
             <h3 class="section-header">Manage Users</h3>
-            <el-button 
-              type="primary" 
-              @click="openDrawer"
-              :icon="Plus"
-            >
+            <el-button type="primary" @click="openDrawer" :icon="Plus">
               Add User
             </el-button>
           </div>
-          
+
           <el-card>
             <el-table :data="users" style="width: 100%" v-loading="loading">
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
               <el-table-column prop="username" label="Username" width="120"></el-table-column>
-              <el-table-column prop="email" label="Email"></el-table-column>
-              <el-table-column prop="full_name" label="Full Name" width="150"></el-table-column>
-              <el-table-column prop="head_pic" label="Face Data" width="120">
+              <el-table-column prop="email" label="Email" min-width="200"></el-table-column>
+              <el-table-column prop="full_name" label="Full Name" width="120"></el-table-column>
+              <el-table-column prop="head_pic" label="Face Data" min-width="150">
                 <template #default="scope">
-                  <el-button 
-                    :type="scope.row.head_pic === '1' ? 'success' : 'danger'"
-                    size="small"
-                    @click="openFaceDetection(scope.row)"
-                    @mouseenter="handleMouseEnter(scope.row.id)"
-                    @mouseleave="handleMouseLeave"
-                    plain
-                  >
-                    <span>{{ 
-                      hoveredUserId === scope.row.id 
+                  <el-button :type="scope.row.head_pic === '1' ? 'success' : 'danger'" size="small"
+                    @click="openFaceDetection(scope.row)" @mouseenter="handleMouseEnter(scope.row.id)"
+                    @mouseleave="handleMouseLeave" plain>
+                    <span>{{
+                      hoveredUserId === scope.row.id
                         ? (scope.row.head_pic === '1' ? 'Update face' : 'Add face')
-                        : (scope.row.head_pic === '1' ? 'Face Added' : 'No face') 
+                        : (scope.row.head_pic === '1' ? 'Face Added' : 'No face')
                     }}</span>
                   </el-button>
                 </template>
@@ -62,119 +53,69 @@
                   {{ formatDate(scope.row.updated_at) }}
                 </template>
               </el-table-column>
-              <el-table-column label="Actions" width="180" fixed="right">
+              <el-table-column label="Actions" min-width="220" fixed="right">
                 <template #default="scope">
-                  <el-button size="small" @click="editUser(scope.row)" type="primary" plain>
+                  <el-button size="small" @click="editUser(scope.row)" type="primary">
+                    <el-icon>
+                      <Edit />
+                    </el-icon>
                     Edit
                   </el-button>
-                  <el-button 
-                    size="small" 
-                    type="danger" 
-                    @click="deleteUser(scope.row.id)"
-                    plain
-                  >
+                  <el-button size="small" type="danger" @click="deleteUser(scope.row.id)" plain>
+                    <el-icon>
+                      <Delete />
+                    </el-icon>
                     Delete
                   </el-button>
                 </template>
               </el-table-column>
             </el-table>
-            
-            <el-pagination
-              @size-change="handleSizeChange"
-              @current-change="handleCurrentChange"
-              :current-page="pagination.page"
-              :page-sizes="[5, 10, 20, 50]"
-              :page-size="pagination.size"
-              layout="total, sizes, prev, pager, next, jumper"
-              :total="pagination.total"
-              style="margin-top: 20px; text-align: right;"
-            ></el-pagination>
+
+            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+              :current-page="pagination.page" :page-sizes="[5, 10, 20, 50]" :page-size="pagination.size"
+              layout="total, sizes, prev, pager, next, jumper" :total="pagination.total"
+              style="margin-top: 20px; text-align: right;"></el-pagination>
           </el-card>
         </div>
       </el-col>
     </el-row>
-    
+
     <!-- 右侧抽屉表单 -->
-    <el-drawer
-      v-model="drawerVisible"
-      :title="formTitle"
-      direction="rtl"
-      size="500px"
-      :before-close="handleDrawerClose"
-    >
+    <el-drawer v-model="drawerVisible" :title="formTitle" direction="rtl" size="500px"
+      :before-close="handleDrawerClose">
       <div class="drawer-content">
         <el-form :model="userForm" :rules="formRules" ref="userFormRef" label-width="120px">
           <el-form-item label="Username" prop="username">
-            <el-input 
-              v-model="userForm.username" 
-              :disabled="!!userForm.id"
-              placeholder="Enter username"
-            ></el-input>
+            <el-input v-model="userForm.username" :disabled="!!userForm.id" placeholder="Enter username"></el-input>
           </el-form-item>
-          
+
           <el-form-item label="Email" prop="email">
-            <el-input 
-              v-model="userForm.email" 
-              placeholder="Enter email address"
-            ></el-input>
+            <el-input v-model="userForm.email" placeholder="Enter email address"></el-input>
           </el-form-item>
-          
+
           <el-form-item label="Full Name" prop="full_name">
-            <el-input 
-              v-model="userForm.full_name" 
-              placeholder="Enter full name"
-            ></el-input>
+            <el-input v-model="userForm.full_name" placeholder="Enter full name"></el-input>
           </el-form-item>
-          
+
           <el-form-item label="Role" v-if="userForm.id">
-            <el-switch
-              v-model="userForm.is_admin"
-              active-text="Admin"
-              inactive-text="User"
-              :disabled="!canModifyRole"
-            />
-            <div class="role-hint" v-if="!canModifyRole">
-              <el-text size="small" type="info">
-                Only admins can modify role permissions
-              </el-text>
-            </div>
+            <el-switch v-model="userForm.is_admin" active-text="Admin" inactive-text="User" />
           </el-form-item>
-          
+
           <el-form-item label="Status">
-            <el-switch
-              v-model="userForm.is_active"
-              active-text="Active"
-              inactive-text="Inactive"
-            />
+            <el-switch v-model="userForm.is_active" active-text="Active" inactive-text="Inactive" />
           </el-form-item>
-          
-          <el-form-item 
-            label="Password" 
-            :prop="!userForm.id ? 'password' : ''"
-            :required="!userForm.id"
-          >
-            <el-input 
-              v-model="userForm.password" 
-              type="password" 
-              :placeholder="userForm.id ? 'Leave blank to keep current password' : 'Enter password'"
-            ></el-input>
+
+          <el-form-item label="Password" :prop="!userForm.id ? 'password' : ''" :required="!userForm.id">
+            <el-input v-model="userForm.password" type="password"
+              :placeholder="userForm.id ? 'Leave blank to keep current password' : 'Enter password'"></el-input>
           </el-form-item>
-          
+
           <div class="form-actions">
-            <el-button 
-              type="primary" 
-              @click="submitForm"
-              :loading="submitting"
-              style="flex: 1;"
-            >
+            <el-button type="primary" @click="submitForm" :loading="submitting" style="flex: 1;">
               <span>{{ userForm.id ? 'Update User' : 'Create User' }}</span>
             </el-button>
-            
-            <el-button 
-              @click="resetForm" 
-              v-if="userForm.id"
-              style="flex: 1; margin-left: 10px;"
-            >
+
+            <el-button @click="resetForm" v-if="userForm.id" style="flex: 1; margin-left: 10px;">
               Cancel
             </el-button>
           </div>
@@ -256,7 +197,7 @@ const fetchCurrentUser = async () => {
   try {
     const token = localStorage.getItem('userToken')
     if (!token) return
-    
+
     currentUserToken.value = token
     const headers = { 'Authorization': `Bearer ${token}` }
     const response = await axios.get(`${API_BASE_URL}/api/v1/users/me`, { headers })
@@ -278,12 +219,12 @@ const fetchUsers = async () => {
   try {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
-    
+
     const response = await axios.get(
       `${API_BASE_URL}/api/v1/admin/users?skip=${(pagination.page - 1) * pagination.size}&limit=${pagination.size}`,
       { headers }
     )
-    
+
     if (response.data.success) {
       users.value = response.data.data
       pagination.total = response.data.total || users.value.length
@@ -345,12 +286,12 @@ const submitForm = async () => {
   }
 
   submitting.value = true
-  
+
   try {
     let response
     const token = localStorage.getItem('userToken')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
-    
+
     const userData = {
       username: userForm.username,
       email: userForm.email,
@@ -358,12 +299,12 @@ const submitForm = async () => {
       is_active: userForm.is_active,
       ...(userForm.password && { password: userForm.password })
     }
-    
+
     // 只有管理员才能修改角色
     if (canModifyRole.value && userForm.id) {
       userData.is_admin = userForm.is_admin
     }
-    
+
     if (userForm.id) {
       // Update existing user
       response = await axios.put(
@@ -382,7 +323,7 @@ const submitForm = async () => {
         { headers }
       )
     }
-    
+
     if (response.data.success) {
       ElMessage.success(
         userForm.id ? 'User updated successfully' : 'User created successfully'
@@ -395,7 +336,7 @@ const submitForm = async () => {
     }
   } catch (error) {
     ElMessage.error(
-      error.response?.data?.detail || 
+      error.response?.data?.detail ||
       (userForm.id ? 'Failed to update user' : 'Failed to create user')
     )
   } finally {
@@ -424,7 +365,7 @@ const handleFaceCaptured = async (imageData) => {
     if (userIndex !== -1) {
       users.value[userIndex].head_pic = '1' // 标记为已录入人脸数据
     }
-    
+
     ElMessage.success('Face data updated successfully')
     selectedUserForFace.value = null
   } catch (error) {
@@ -444,10 +385,10 @@ const deleteUser = async (userId) => {
         type: 'warning'
       }
     )
-    
+
     const token = localStorage.getItem('userToken')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
-    
+
     await axios.delete(`${API_BASE_URL}/api/v1/users/${userId}`, { headers })
     ElMessage.success('User deleted successfully')
     fetchUsers()
