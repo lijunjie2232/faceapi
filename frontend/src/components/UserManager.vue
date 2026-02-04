@@ -1,25 +1,69 @@
 <template>
   <div class="user-manager component-container">
-    <el-row :gutter="30">
-      <el-col :lg="16" :xl="17">
+    <el-row :gutter="20">
+      <el-col :span="24">
         <div class="table-container">
-          <h3 class="section-header">Manage Users</h3>
+          <div class="header-actions">
+            <h3 class="section-header">Manage Users</h3>
+            <el-button 
+              type="primary" 
+              @click="openDrawer"
+              :icon="Plus"
+            >
+              Add User
+            </el-button>
+          </div>
           
           <el-card>
             <el-table :data="users" style="width: 100%" v-loading="loading">
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
-              <el-table-column prop="username" label="Username"></el-table-column>
+              <el-table-column prop="username" label="Username" width="120"></el-table-column>
               <el-table-column prop="email" label="Email"></el-table-column>
-              <el-table-column prop="full_name" label="Full Name"></el-table-column>
-              <el-table-column prop="is_active" label="Active" width="100">
+              <el-table-column prop="full_name" label="Full Name" width="150"></el-table-column>
+              <el-table-column prop="head_pic" label="Avatar" width="100">
                 <template #default="scope">
-                  <el-tag :type="scope.row.is_active ? 'success' : 'danger'" size="small">
-                    {{ scope.row.is_active ? 'Yes' : 'No' }}
+                  <el-avatar 
+                    v-if="scope.row.head_pic" 
+                    :src="`${API_BASE_URL}/api/v1/users/${scope.row.id}/avatar`"
+                    size="small"
+                    shape="square"
+                  >
+                    {{ scope.row.full_name?.charAt(0) || scope.row.username?.charAt(0) }}
+                  </el-avatar>
+                  <el-avatar 
+                    v-else 
+                    size="small" 
+                    shape="square"
+                  >
+                    {{ scope.row.full_name?.charAt(0) || scope.row.username?.charAt(0) }}
+                  </el-avatar>
+                </template>
+              </el-table-column>
+              <el-table-column prop="is_admin" label="Role" width="100">
+                <template #default="scope">
+                  <el-tag :type="scope.row.is_admin ? 'danger' : 'info'" size="small">
+                    {{ scope.row.is_admin ? 'Admin' : 'User' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="Created At" width="180"></el-table-column>
-              <el-table-column label="Actions" width="180">
+              <el-table-column prop="is_active" label="Status" width="100">
+                <template #default="scope">
+                  <el-tag :type="scope.row.is_active ? 'success' : 'danger'" size="small">
+                    {{ scope.row.is_active ? 'Active' : 'Inactive' }}
+                  </el-tag>
+                </template>
+              </el-table-column>
+              <el-table-column prop="created_at" label="Created" width="180">
+                <template #default="scope">
+                  {{ formatDate(scope.row.created_at) }}
+                </template>
+              </el-table-column>
+              <el-table-column prop="updated_at" label="Last Updated" width="180">
+                <template #default="scope">
+                  {{ formatDate(scope.row.updated_at) }}
+                </template>
+              </el-table-column>
+              <el-table-column label="Actions" width="180" fixed="right">
                 <template #default="scope">
                   <el-button size="small" @click="editUser(scope.row)" type="primary" plain>
                     Edit
@@ -49,74 +93,95 @@
           </el-card>
         </div>
       </el-col>
-      
-      <el-col :lg="8" :xl="7">
-        <el-affix :offset="80" class="affix-form">
-          <el-card class="form-section">
-            <template #header>
-              <div class="card-header">
-                <h3>{{ formTitle }}</h3>
-              </div>
-            </template>
-            
-            <el-form :model="userForm" :rules="formRules" ref="userFormRef" label-width="120px">
-              <el-form-item label="Username" prop="username">
-                <el-input 
-                  v-model="userForm.username" 
-                  :disabled="!!userForm.id"
-                  placeholder="Enter username"
-                ></el-input>
-              </el-form-item>
-              
-              <el-form-item label="Email" prop="email">
-                <el-input 
-                  v-model="userForm.email" 
-                  placeholder="Enter email address"
-                ></el-input>
-              </el-form-item>
-              
-              <el-form-item label="Full Name" prop="full_name">
-                <el-input 
-                  v-model="userForm.full_name" 
-                  placeholder="Enter full name"
-                ></el-input>
-              </el-form-item>
-              
-              <el-form-item 
-                label="Password" 
-                :prop="!userForm.id ? 'password' : ''"
-                :required="!userForm.id"
-              >
-                <el-input 
-                  v-model="userForm.password" 
-                  type="password" 
-                  :placeholder="userForm.id ? 'Leave blank to keep current password' : 'Enter password'"
-                ></el-input>
-              </el-form-item>
-              
-              <el-form-item>
-                <el-button 
-                  type="primary" 
-                  @click="submitForm"
-                  :loading="submitting"
-                  style="width: 100%;"
-                >
-                  <span>{{ userForm.id ? 'Update User' : 'Create User' }}</span>
-                </el-button>
-                
-                <el-button 
-                  @click="resetForm" 
-                  v-if="userForm.id"
-                  style="width: 100%; margin-top: 10px;"
-                >
-                  Cancel
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </el-affix>
-      </el-col>
     </el-row>
+    
+    <!-- 右侧抽屉表单 -->
+    <el-drawer
+      v-model="drawerVisible"
+      :title="formTitle"
+      direction="rtl"
+      size="500px"
+      :before-close="handleDrawerClose"
+    >
+      <div class="drawer-content">
+        <el-form :model="userForm" :rules="formRules" ref="userFormRef" label-width="120px">
+          <el-form-item label="Username" prop="username">
+            <el-input 
+              v-model="userForm.username" 
+              :disabled="!!userForm.id"
+              placeholder="Enter username"
+            ></el-input>
+          </el-form-item>
+          
+          <el-form-item label="Email" prop="email">
+            <el-input 
+              v-model="userForm.email" 
+              placeholder="Enter email address"
+            ></el-input>
+          </el-form-item>
+          
+          <el-form-item label="Full Name" prop="full_name">
+            <el-input 
+              v-model="userForm.full_name" 
+              placeholder="Enter full name"
+            ></el-input>
+          </el-form-item>
+          
+          <el-form-item label="Role" v-if="userForm.id">
+            <el-switch
+              v-model="userForm.is_admin"
+              active-text="Admin"
+              inactive-text="User"
+              :disabled="!canModifyRole"
+            />
+            <div class="role-hint" v-if="!canModifyRole">
+              <el-text size="small" type="info">
+                Only admins can modify role permissions
+              </el-text>
+            </div>
+          </el-form-item>
+          
+          <el-form-item label="Status">
+            <el-switch
+              v-model="userForm.is_active"
+              active-text="Active"
+              inactive-text="Inactive"
+            />
+          </el-form-item>
+          
+          <el-form-item 
+            label="Password" 
+            :prop="!userForm.id ? 'password' : ''"
+            :required="!userForm.id"
+          >
+            <el-input 
+              v-model="userForm.password" 
+              type="password" 
+              :placeholder="userForm.id ? 'Leave blank to keep current password' : 'Enter password'"
+            ></el-input>
+          </el-form-item>
+          
+          <div class="form-actions">
+            <el-button 
+              type="primary" 
+              @click="submitForm"
+              :loading="submitting"
+              style="flex: 1;"
+            >
+              <span>{{ userForm.id ? 'Update User' : 'Create User' }}</span>
+            </el-button>
+            
+            <el-button 
+              @click="resetForm" 
+              v-if="userForm.id"
+              style="flex: 1; margin-left: 10px;"
+            >
+              Cancel
+            </el-button>
+          </div>
+        </el-form>
+      </div>
+    </el-drawer>
   </div>
 </template>
 
@@ -124,6 +189,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
@@ -131,12 +197,16 @@ const users = ref([])
 const loading = ref(false)
 const submitting = ref(false)
 const userFormRef = ref()
+const drawerVisible = ref(false)
+const currentUserRole = ref(false) // 当前用户是否为管理员
 
 const userForm = reactive({
   id: undefined,
   username: '',
   email: '',
   full_name: '',
+  is_admin: false,
+  is_active: true,
   password: ''
 })
 
@@ -167,16 +237,41 @@ const formTitle = computed(() => {
   return userForm.id ? 'Edit User' : 'Create New User'
 })
 
+// 判断当前用户是否可以修改角色（只有管理员可以修改角色）
+const canModifyRole = computed(() => {
+  return currentUserRole.value === true
+})
+
 onMounted(() => {
+  fetchCurrentUser()
   fetchUsers()
 })
+
+const fetchCurrentUser = async () => {
+  try {
+    const token = localStorage.getItem('userToken')
+    if (!token) return
+    
+    const headers = { 'Authorization': `Bearer ${token}` }
+    const response = await axios.get(`${API_BASE_URL}/api/v1/users/me`, { headers })
+    if (response.data.success) {
+      currentUserRole.value = response.data.data.is_admin || false
+    }
+  } catch (error) {
+    console.error('Failed to fetch current user:', error)
+  }
+}
+
+const formatDate = (dateString) => {
+  if (!dateString) return '-'
+  return new Date(dateString).toLocaleString()
+}
 
 const fetchUsers = async () => {
   loading.value = true
   try {
-    // Get token from localStorage and set in header
-    const token = localStorage.getItem('token');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const token = localStorage.getItem('token')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
     
     const response = await axios.get(
       `${API_BASE_URL}/api/v1/admin/users?skip=${(pagination.page - 1) * pagination.size}&limit=${pagination.size}`,
@@ -184,10 +279,7 @@ const fetchUsers = async () => {
     )
     
     if (response.data.success) {
-      users.value = response.data.data.map(user => ({
-        ...user,
-        created_at: new Date(user.created_at).toLocaleString()
-      }))
+      users.value = response.data.data
       pagination.total = response.data.total || users.value.length
     } else {
       ElMessage.error(response.data.message || 'Failed to fetch users')
@@ -210,8 +302,22 @@ const handleCurrentChange = (page) => {
   fetchUsers()
 }
 
+const openDrawer = () => {
+  resetForm()
+  drawerVisible.value = true
+}
+
 const editUser = (user) => {
-  Object.assign(userForm, user)
+  Object.assign(userForm, {
+    ...user,
+    password: '' // 编辑时不显示原密码
+  })
+  drawerVisible.value = true
+}
+
+const handleDrawerClose = (done) => {
+  resetForm()
+  done()
 }
 
 const resetForm = () => {
@@ -219,6 +325,8 @@ const resetForm = () => {
   userForm.username = ''
   userForm.email = ''
   userForm.full_name = ''
+  userForm.is_admin = false
+  userForm.is_active = true
   userForm.password = ''
   userFormRef.value?.clearValidate()
 }
@@ -234,20 +342,27 @@ const submitForm = async () => {
   
   try {
     let response
-    // Get token from localStorage and set in header
-    const token = localStorage.getItem('userToken');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+    
+    const userData = {
+      username: userForm.username,
+      email: userForm.email,
+      full_name: userForm.full_name,
+      is_active: userForm.is_active,
+      ...(userForm.password && { password: userForm.password })
+    }
+    
+    // 只有管理员才能修改角色
+    if (canModifyRole.value && userForm.id) {
+      userData.is_admin = userForm.is_admin
+    }
     
     if (userForm.id) {
       // Update existing user
       response = await axios.put(
         `${API_BASE_URL}/api/v1/users/${userForm.id}`,
-        {
-          username: userForm.username,
-          email: userForm.email,
-          full_name: userForm.full_name,
-          ...(userForm.password && { password: userForm.password })
-        },
+        userData,
         { headers }
       )
     } else {
@@ -255,9 +370,7 @@ const submitForm = async () => {
       response = await axios.post(
         `${API_BASE_URL}/api/v1/users/`,
         {
-          username: userForm.username,
-          email: userForm.email,
-          full_name: userForm.full_name,
+          ...userData,
           password: userForm.password
         },
         { headers }
@@ -268,6 +381,7 @@ const submitForm = async () => {
       ElMessage.success(
         userForm.id ? 'User updated successfully' : 'User created successfully'
       )
+      drawerVisible.value = false
       resetForm()
       fetchUsers()
     } else {
@@ -295,9 +409,8 @@ const deleteUser = async (userId) => {
       }
     )
     
-    // Get token from localStorage and set in header
-    const token = localStorage.getItem('userToken');
-    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
     
     await axios.delete(`${API_BASE_URL}/api/v1/users/${userId}`, { headers })
     ElMessage.success('User deleted successfully')
@@ -320,20 +433,57 @@ const deleteUser = async (userId) => {
   padding: 25px;
 }
 
-.form-section {
-  border-radius: 12px;
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
 }
 
-.form-section .el-card__body {
-  padding: 20px;
+.section-header {
+  margin: 0;
+  color: #303133;
+  font-size: 24px;
+  font-weight: 600;
 }
 
-.affix-form {
-  top: 90px;
+.drawer-content {
+  padding: 20px 0;
 }
 
-.card-header {
-  padding-bottom: 0;
-  margin-bottom: -5px;
+.form-actions {
+  display: flex;
+  margin-top: 30px;
+  gap: 10px;
+}
+
+.role-hint {
+  margin-top: 5px;
+}
+
+/* 抽屉样式优化 */
+:deep(.el-drawer__header) {
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #eee;
+}
+
+:deep(.el-drawer__body) {
+  padding: 0 20px;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 22px;
+}
+
+:deep(.el-input__inner) {
+  height: 40px;
+}
+
+/* 头像样式优化 */
+:deep(.el-avatar) {
+  background-color: #409eff;
+  color: white;
+  font-weight: 500;
 }
 </style>
