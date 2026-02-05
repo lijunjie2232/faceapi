@@ -41,11 +41,22 @@
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="is_active" label="Status" width="100">
+              <el-table-column prop="is_active" label="Status" width="80">
                 <template #default="scope">
-                  <el-tag :type="scope.row.is_active ? 'success' : 'danger'" size="small">
-                    {{ scope.row.is_active ? 'Active' : 'Inactive' }}
-                  </el-tag>
+                  <el-switch
+                    v-model="scope.row.is_active"
+                    :active-value="true"
+                    :inactive-value="false"
+                    @change="handleStatusChange(scope.row)"
+                    :loading="statusLoading[scope.row.id]"
+                  >
+                    <template #active-action>
+                      <el-icon><CircleCheckFilled /></el-icon>
+                    </template>
+                    <template #inactive-action>
+                      <el-icon><RemoveFilled /></el-icon>
+                    </template>
+                  </el-switch>
                 </template>
               </el-table-column>
               <el-table-column prop="created_at" label="Created" width="180">
@@ -114,7 +125,14 @@
           </el-form-item>
 
           <el-form-item label="Status">
-            <el-switch v-model="userForm.is_active" active-text="Active" inactive-text="Inactive" />
+            <el-switch v-model="userForm.is_active">
+              <template #active-action>
+                <el-icon><CircleCheckFilled /></el-icon>
+              </template>
+              <template #inactive-action>
+                <el-icon><RemoveFilled /></el-icon>
+              </template>
+            </el-switch>
           </el-form-item>
 
           <el-form-item label="Password" :prop="!userForm.id ? 'password' : ''" :required="!userForm.id">
@@ -141,7 +159,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, UserFilled, CirclePlus, Refresh } from '@element-plus/icons-vue'
+import { Plus, Refresh, CircleCheckFilled, RemoveFilled } from '@element-plus/icons-vue'
 import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -157,6 +175,8 @@ const selectedUserForFace = ref(null)
 const currentUserRole = ref(false) // 当前用户是否为管理员
 // 添加hover状态管理
 const hoveredUserId = ref(null)
+// 添加状态更新loading状态
+const statusLoading = ref({})
 
 const userForm = reactive({
   id: undefined,
@@ -383,6 +403,37 @@ const handleFaceCaptured = async (imageData) => {
   } catch (error) {
     console.error('Error handling face capture:', error)
     ElMessage.error('Failed to update face data')
+  }
+}
+
+const handleStatusChange = async (user) => {
+  try {
+    statusLoading.value[user.id] = true
+    
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+    
+    const response = await axios.put(
+      `${API_BASE_URL}/api/v1/users/${user.id}`,
+      {
+        is_active: user.is_active
+      },
+      { headers }
+    )
+    
+    if (response.data.success) {
+      ElMessage.success(`User ${user.is_active ? 'activated' : 'deactivated'} successfully`)
+    } else {
+      // Revert the change if API call fails
+      user.is_active = !user.is_active
+      ElMessage.error(response.data.message || 'Failed to update user status')
+    }
+  } catch (error) {
+    // Revert the change if API call fails
+    user.is_active = !user.is_active
+    ElMessage.error(error.response?.data?.detail || 'Failed to update user status')
+  } finally {
+    statusLoading.value[user.id] = false
   }
 }
 
