@@ -86,7 +86,7 @@
       <div class="drawer-content">
         <el-form :model="userForm" :rules="formRules" ref="userFormRef" label-width="120px">
           <el-form-item label="Username" prop="username">
-            <el-input v-model="userForm.username" :disabled="!!userForm.id" placeholder="Enter username"></el-input>
+            <el-input v-model="userForm.username" placeholder="Enter username"></el-input>
           </el-form-item>
 
           <el-form-item label="Email" prop="email">
