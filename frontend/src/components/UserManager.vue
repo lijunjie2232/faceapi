@@ -5,9 +5,14 @@
         <div class="table-container">
           <div class="header-actions">
             <h3 class="section-header">Manage Users</h3>
-            <el-button type="primary" @click="openDrawer" :icon="Plus">
-              Add User
-            </el-button>
+            <div class="header-buttons">
+              <el-button type="primary" @click="openDrawer" :icon="Plus">
+                Add User
+              </el-button>
+              <el-button type="success" @click="refreshUsers" :icon="Refresh" :loading="loading" plain>
+                Refresh
+              </el-button>
+            </div>
           </div>
 
           <el-card>
@@ -71,10 +76,17 @@
               </el-table-column>
             </el-table>
 
-            <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
-              :current-page="pagination.page" :page-sizes="[5, 10, 20, 50]" :page-size="pagination.size"
-              layout="total, sizes, prev, pager, next, jumper" :total="pagination.total"
-              style="margin-top: 20px; text-align: right;"></el-pagination>
+            <div class="table-footer">
+              <el-pagination @size-change="handleSizeChange" @current-change="handleCurrentChange"
+                :current-page="pagination.page" :page-sizes="[5, 10, 20, 50]" :page-size="pagination.size"
+                layout="total, sizes, prev, pager, next, jumper" :total="pagination.total"
+                style="margin-top: 20px; text-align: right;"></el-pagination>
+              <div class="footer-actions">
+                <el-button type="success" @click="refreshUsers" :icon="Refresh" :loading="loading" size="large" plain>
+                  Refresh List
+                </el-button>
+              </div>
+            </div>
           </el-card>
         </div>
       </el-col>
@@ -129,7 +141,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, UserFilled, CirclePlus } from '@element-plus/icons-vue'
+import { Plus, UserFilled, CirclePlus, Refresh } from '@element-plus/icons-vue'
 import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -396,6 +408,19 @@ const deleteUser = async (userId) => {
     ElMessage.error(error.response?.data?.detail || 'Failed to delete user')
   }
 }
+
+const refreshUsers = async () => {
+  loading.value = true
+  try {
+    await fetchUsers()
+    ElMessage.success('User list refreshed successfully')
+  } catch (error) {
+    ElMessage.error('Failed to refresh user list')
+  } finally {
+    loading.value = false
+  }
+}
+
 </script>
 
 <style scoped>
@@ -415,6 +440,14 @@ const deleteUser = async (userId) => {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.header-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
 }
 
 .section-header {
@@ -422,6 +455,21 @@ const deleteUser = async (userId) => {
   color: #303133;
   font-size: 24px;
   font-weight: 600;
+  flex: 1;
+}
+
+.table-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20px;
+  flex-wrap: wrap;
+  gap: 15px;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: center;
 }
 
 .drawer-content {
@@ -436,6 +484,27 @@ const deleteUser = async (userId) => {
 
 .role-hint {
   margin-top: 5px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-buttons {
+    justify-content: center;
+  }
+  
+  .table-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .footer-actions {
+    justify-content: center;
+  }
 }
 
 /* 抽屉样式优化 */
