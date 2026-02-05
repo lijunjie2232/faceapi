@@ -5,7 +5,11 @@ This module defines the administrative API endpoints for managing users,
 including listing, creating, updating, and deleting user accounts.
 """
 
-from fastapi import APIRouter, Depends, HTTPException
+import logging
+from traceback import print_exc
+
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from tortoise.transactions import atomic
 
 from ..schemas import (
     DataResponse,
@@ -22,13 +26,16 @@ from ..services import (
     list_users_service,
     update_user_as_admin_service,
     validate_user_update_uniqueness,
+    update_face_embedding_service,
 )
+from ..models import UserModel
 from ..utils import get_current_admin_user
 
 router = APIRouter(
     prefix="/admin",
     tags=["admin"],
 )
+logger = logging.getLogger(__name__)
 
 
 @router.get(
@@ -42,6 +49,7 @@ async def list_all_users(
 ):
     """Admin endpoint to list all users with pagination"""
     try:
+        limit = min(100, max(limit, 1))
         users, count = await list_users_service(skip, limit)
 
         return ListResponse[User](
@@ -162,6 +170,7 @@ async def create_user_as_admin(
 async def update_user_as_admin(
     user_id: int,
     user_update: UserUpdateAsAdmin,
+    current_admin: UserModel = Depends(get_current_admin_user),
 ):
     """Admin endpoint to update a specific user by ID"""
     try:
@@ -169,6 +178,11 @@ async def update_user_as_admin(
         user = await get_user_service(id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
+
+        if user_id == current_admin.id:
+            # even though the current user is admin, self-active/inactive is not allowed
+            if user_update.is_active is not None:
+                raise HTTPException(status_code=400, detail="Cannot change own status")
 
         # Validate uniqueness of username and email
         validation_error = await validate_user_update_uniqueness(user_id, user_update)
@@ -202,61 +216,34 @@ async def update_user_as_admin(
         ) from e
 
 
-@router.delete(
-    "/users/{user_id}",
-    response_model=DataResponse[bool],
+# update the face of any user as admin
+@atomic()
+@router.put(
+    "/face/{user_id}",
     dependencies=[Depends(get_current_admin_user)],
 )
-async def delete_user_as_admin(
+async def update_face_embedding_as_admin(
     user_id: int,
+    image: UploadFile = File(...),
 ):
-    """Admin endpoint to delete a specific user by ID (soft delete)"""
+    """
+    Update the face embedding for the specified user as an admin.
+    This endpoint allows an admin to update the face embedding for a specific user.
+    It uses the existing face embedding service but adds admin-level validation and error handling.
+
+    Args:
+        user_id (int): The ID of the user whose face embedding to update
+        image (UploadFile): The uploaded image containing the user's face
+
+    Returns:
+        Success message indicating the embedding was updated
+    """
     try:
-        # Get the user to check if it exists
-        user = await get_user_service(id=user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Perform soft delete by deactivating the user via service
-        success = await deactivate_user_service(user_id)
-
-        return DataResponse[bool](
-            success=True, message="User deactivated successfully", data=success
-        )
+        result = await update_face_embedding_service(user_id, image)
+        return result
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error deactivating user: {str(e)}",
-        ) from e
-
-
-@router.patch(
-    "/users/{user_id}/activate",
-    response_model=DataResponse[bool],
-    dependencies=[Depends(get_current_admin_user)],
-)
-async def activate_user(
-    user_id: int,
-):
-    """Admin endpoint to activate a specific user by ID"""
-    try:
-        # Get the user to check if it exists
-        user = await get_user_service(id=user_id)
-        if not user:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        # Activate the user via service
-        success = await activate_user_service(user_id)
-
-        return DataResponse[bool](
-            success=True, message="User activated successfully", data=success
-        )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Error activating user: {str(e)}",
-        ) from e
+        print_exc()
+        logger.error("Error in face embedding update: %s", str(e))
+        raise e

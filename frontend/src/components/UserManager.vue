@@ -410,11 +410,11 @@ const handleStatusChange = async (user) => {
   try {
     statusLoading.value[user.id] = true
     
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
     
     const response = await axios.put(
-      `${API_BASE_URL}/api/v1/users/${user.id}`,
+      `${API_BASE_URL}/api/v1/admin/users/${user.id}`,
       {
         is_active: user.is_active
       },
