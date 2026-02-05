@@ -12,11 +12,33 @@
               <el-button type="success" @click="refreshUsers" :icon="Refresh" :loading="loading" plain>
                 Refresh
               </el-button>
+              <el-dropdown v-if="selectedUsers.length > 0" @command="handleBatchAction">
+                <el-button type="warning" :icon="Operation">
+                  Batch Actions <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                </el-button>
+                <template #dropdown>
+                  <el-dropdown-menu>
+                    <el-dropdown-item command="activate">Activate Selected</el-dropdown-item>
+                    <el-dropdown-item command="deactivate">Deactivate Selected</el-dropdown-item>
+                    <el-dropdown-item command="reset-password" divided>Reset Password</el-dropdown-item>
+                    <el-dropdown-item command="delete-face">Delete Face Data</el-dropdown-item>
+                  </el-dropdown-menu>
+                </template>
+              </el-dropdown>
+              <span v-if="selectedUsers.length > 0" class="selection-info">
+                {{ selectedUsers.length }} user(s) selected
+              </span>
             </div>
           </div>
 
           <el-card>
-            <el-table :data="users" style="width: 100%" v-loading="loading">
+            <el-table 
+              :data="users" 
+              style="width: 100%" 
+              v-loading="loading"
+              @selection-change="handleSelectionChange"
+            >
+              <el-table-column type="selection" width="55"></el-table-column>
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
               <el-table-column prop="username" label="Username" width="120"></el-table-column>
               <el-table-column prop="email" label="Email" min-width="200"></el-table-column>
@@ -152,6 +174,51 @@
         </el-form>
       </div>
     </el-drawer>
+
+    <!-- 密码重置对话框 -->
+    <el-dialog
+      v-model="passwordResetDialogVisible"
+      title="Reset Password"
+      width="400px"
+      :before-close="handlePasswordResetCancel"
+    >
+      <el-form
+        :model="{ newPassword }"
+        :rules="passwordResetRules"
+        ref="passwordResetFormRef"
+        label-width="120px"
+      >
+        <el-form-item label="New Password" prop="newPassword">
+          <el-input
+            v-model="newPassword"
+            type="password"
+            placeholder="Enter new password"
+            show-password
+          ></el-input>
+        </el-form-item>
+        <el-form-item label="Confirm Password" prop="confirmPassword">
+          <el-input
+            v-model="confirmPassword"
+            type="password"
+            placeholder="Confirm new password"
+            show-password
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="handlePasswordResetCancel">Cancel</el-button>
+          <el-button 
+            type="primary" 
+            @click="confirmPasswordReset"
+            :loading="submitting"
+          >
+            Reset Password
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -159,7 +226,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, CircleCheckFilled, RemoveFilled } from '@element-plus/icons-vue'
+import { Plus, Refresh, CircleCheckFilled, RemoveFilled, Operation, ArrowDown } from '@element-plus/icons-vue'
 import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -177,6 +244,13 @@ const currentUserRole = ref(false) // 当前用户是否为管理员
 const hoveredUserId = ref(null)
 // 添加状态更新loading状态
 const statusLoading = ref({})
+// 添加多选状态管理
+const selectedUsers = ref([])
+// 添加密码重置相关状态
+const passwordResetDialogVisible = ref(false)
+const newPassword = ref('')
+const confirmPassword = ref('')
+const passwordResetFormRef = ref()
 
 const userForm = reactive({
   id: undefined,
@@ -207,6 +281,28 @@ const formRules = computed(() => {
     password: [
       { required: !userForm.id, message: 'Please enter a password', trigger: 'blur' },
       { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
+    ]
+  }
+})
+
+const passwordResetRules = computed(() => {
+  return {
+    newPassword: [
+      { required: true, message: 'Please enter a new password', trigger: 'blur' },
+      { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
+    ],
+    confirmPassword: [
+      { required: true, message: 'Please confirm the password', trigger: 'blur' },
+      {
+        validator: (rule, value, callback) => {
+          if (value !== newPassword.value) {
+            callback(new Error('Passwords do not match'))
+          } else {
+            callback()
+          }
+        },
+        trigger: 'blur'
+      }
     ]
   }
 })
@@ -472,6 +568,209 @@ const refreshUsers = async () => {
   }
 }
 
+const handleSelectionChange = (selection) => {
+  selectedUsers.value = selection
+}
+
+const handleBatchAction = async (command) => {
+  if (selectedUsers.value.length === 0) {
+    ElMessage.warning('Please select at least one user')
+    return
+  }
+
+  try {
+    switch (command) {
+      case 'activate':
+        await batchUpdateStatus(true)
+        break
+      case 'deactivate':
+        await batchUpdateStatus(false)
+        break
+      case 'reset-password':
+        await batchResetPassword()
+        break
+      case 'delete-face':
+        await batchDeleteFace()
+        break
+    }
+  } catch (error) {
+    console.error('Batch operation failed:', error)
+  }
+}
+
+const batchUpdateStatus = async (isActive) => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to ${isActive ? 'activate' : 'deactivate'} ${selectedUsers.value.length} user(s)?`,
+      'Confirm Batch Action',
+      {
+        confirmButtonText: 'Confirm',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+
+    // 并行处理所有用户的更新
+    const updatePromises = selectedUsers.value.map(user =>
+      axios.put(
+        `${API_BASE_URL}/api/v1/admin/users/${user.id}`,
+        { is_active: isActive },
+        { headers }
+      )
+    )
+
+    const results = await Promise.all(updatePromises)
+    
+    // 检查是否有失败的操作
+    const successCount = results.filter(result => result.data.success).length
+    
+    if (successCount === selectedUsers.value.length) {
+      ElMessage.success(`Successfully ${isActive ? 'activated' : 'deactivated'} ${successCount} user(s)`)
+    } else {
+      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} users ${isActive ? 'activated' : 'deactivated'}`)
+    }
+
+    // 清除选择并刷新列表
+    selectedUsers.value = []
+    fetchUsers()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Batch operation failed')
+    }
+  }
+}
+
+const batchResetPassword = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to reset passwords for ${selectedUsers.value.length} user(s)?`,
+      'Confirm Password Reset',
+      {
+        confirmButtonText: 'Continue',
+        cancelButtonText: 'Cancel',
+        type: 'warning'
+      }
+    )
+
+    // Show password input dialog
+    newPassword.value = ''
+    confirmPassword.value = ''
+    passwordResetDialogVisible.value = true
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Password reset cancelled')
+    }
+  }
+}
+
+const confirmPasswordReset = async () => {
+  try {
+    await passwordResetFormRef.value.validate()
+  } catch {
+    return
+  }
+
+  submitting.value = true
+  
+  try {
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+
+    // 并行处理所有用户的密码重置
+    const resetPromises = selectedUsers.value.map(user =>
+      axios.put(
+        `${API_BASE_URL}/api/v1/admin/users/${user.id}/reset-password`,
+        { new_password: newPassword.value },
+        { headers }
+      )
+    )
+
+    const results = await Promise.all(resetPromises)
+    
+    // 检查是否有失败的操作
+    const successCount = results.filter(result => result.data.success).length
+    
+    if (successCount === selectedUsers.value.length) {
+      ElMessage.success(`Successfully reset passwords for ${successCount} user(s)`)
+    } else {
+      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} passwords reset`)
+    }
+
+    // 关闭对话框并清除选择
+    passwordResetDialogVisible.value = false
+    newPassword.value = ''
+    confirmPassword.value = ''
+    selectedUsers.value = []
+    fetchUsers()
+  } catch (error) {
+    ElMessage.error('Password reset failed')
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handlePasswordResetCancel = () => {
+  passwordResetDialogVisible.value = false
+  newPassword.value = ''
+  confirmPassword.value = ''
+  passwordResetFormRef.value?.clearValidate()
+}
+
+const batchDeleteFace = async () => {
+  try {
+    await ElMessageBox.confirm(
+      `Are you sure you want to delete face data for ${selectedUsers.value.length} user(s)? This action cannot be undone.`,
+      'Confirm Face Data Deletion',
+      {
+        confirmButtonText: 'Delete Face Data',
+        cancelButtonText: 'Cancel',
+        type: 'error'
+      }
+    )
+
+    const token = localStorage.getItem('userToken')
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
+
+    // 并行处理所有用户的面部数据删除
+    const deletePromises = selectedUsers.value.map(user =>
+      axios.delete(
+        `${API_BASE_URL}/api/v1/admin/users/${user.id}/face-data`,
+        { headers }
+      )
+    )
+
+    const results = await Promise.all(deletePromises)
+    
+    // 检查是否有失败的操作
+    const successCount = results.filter(result => result.data.success).length
+    
+    if (successCount === selectedUsers.value.length) {
+      ElMessage.success(`Successfully deleted face data for ${successCount} user(s)`)
+    } else {
+      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} face data deleted`)
+    }
+
+    // 更新用户列表中的人脸状态
+    selectedUsers.value.forEach(user => {
+      const userIndex = users.value.findIndex(u => u.id === user.id)
+      if (userIndex !== -1) {
+        users.value[userIndex].head_pic = '0' // 标记为人脸数据已删除
+      }
+    })
+
+    // 清除选择并刷新列表
+    selectedUsers.value = []
+    fetchUsers()
+  } catch (error) {
+    if (error !== 'cancel') {
+      ElMessage.error('Batch face data deletion failed')
+    }
+  }
+}
+
 </script>
 
 <style scoped>
@@ -535,6 +834,34 @@ const refreshUsers = async () => {
 
 .role-hint {
   margin-top: 5px;
+}
+
+.selection-info {
+  margin-left: 15px;
+  color: #606266;
+  font-size: 14px;
+  background: #f5f7fa;
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+/* Responsive adjustments for header actions */
+@media (max-width: 768px) {
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .header-buttons {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .selection-info {
+    margin-left: 0;
+    margin-top: 10px;
+    text-align: center;
+  }
 }
 
 /* Responsive adjustments */
