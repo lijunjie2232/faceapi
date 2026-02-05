@@ -323,7 +323,7 @@ onMounted(() => {
 
 const fetchCurrentUser = async () => {
   try {
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     if (!token) return
 
     currentUserToken.value = token
@@ -417,7 +417,7 @@ const submitForm = async () => {
 
   try {
     let response
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     const userData = {
@@ -545,7 +545,7 @@ const deleteUser = async (userId) => {
       }
     )
 
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     await axios.delete(`${API_BASE_URL}/api/v1/users/${userId}`, { headers })
@@ -610,7 +610,7 @@ const batchUpdateStatus = async (isActive) => {
       }
     )
 
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     // 并行处理所有用户的更新
@@ -676,7 +676,7 @@ const confirmPasswordReset = async () => {
   submitting.value = true
   
   try {
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     // 并行处理所有用户的密码重置
@@ -731,7 +731,7 @@ const batchDeleteFace = async () => {
       }
     )
 
-    const token = localStorage.getItem('userToken')
+    const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     // 并行处理所有用户的面部数据删除
