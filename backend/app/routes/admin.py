@@ -7,6 +7,7 @@ including listing, creating, updating, and deleting user accounts.
 
 import logging
 from traceback import print_exc
+from typing import Union
 
 from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
 from tortoise.transactions import atomic
@@ -17,16 +18,20 @@ from ..schemas import (
     User,
     UserCreateAsAdmin,
     UserUpdateAsAdmin,
+    BatchOperationRequest,
+    BatchOperationResult,
 )
 from ..services import (
-    activate_user_service,
     create_user_as_admin_service,
-    deactivate_user_service,
     get_user_service,
     list_users_service,
     update_user_as_admin_service,
     validate_user_update_uniqueness,
     update_face_embedding_service,
+    batch_reset_password_service,
+    batch_activate_users_service,
+    batch_deactivate_users_service,
+    batch_reset_face_data_service,
 )
 from ..models import UserModel
 from ..utils import get_current_admin_user
@@ -213,6 +218,87 @@ async def update_user_as_admin(
         raise HTTPException(
             status_code=400 if "already" in str(e) or "duplicate" in str(e) else 500,
             detail=f"Error updating user: {str(e)}",
+        ) from e
+
+
+@atomic()
+@router.post(
+    "/batch/{operation}",
+    response_model=DataResponse[BatchOperationResult],
+    dependencies=[Depends(get_current_admin_user)],
+)
+async def batch_operation(
+    operation: str,
+    batch_request: BatchOperationRequest,
+    current_admin: UserModel = Depends(get_current_admin_user),
+):
+    """
+    Admin endpoint to perform batch operations on multiple users.
+
+    Supported operations:
+    - reset-password: Reset passwords to specified value
+    - active: Activate user accounts
+    - inactive: Deactivate user accounts
+    - reset-face: Reset face data to unset
+
+    Args:
+        operation: The operation to perform
+        batch_request: Request containing user_ids and optional value
+        current_admin: Current admin user (dependency)
+
+    Returns:
+        BatchOperationResult with success/failure statistics
+    """
+    # Validate operation
+    valid_operations = ["reset-password", "active", "inactive", "reset-face"]
+    if operation not in valid_operations:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid operation. Valid operations are: {valid_operations}",
+        )
+
+    # Validate user_ids
+    if not batch_request.user_ids:
+        raise HTTPException(status_code=400, detail="user_ids list cannot be empty")
+
+    # Check for self-operation restrictions
+    if current_admin.id in batch_request.user_ids:
+        raise HTTPException(
+            status_code=400, detail="Cannot inclued your own account in batch operation"
+        )
+
+    # Validate value requirement
+    if operation == "reset-password" and not batch_request.value:
+        raise HTTPException(
+            status_code=400, detail="Value is required for reset-password operation"
+        )
+
+    try:
+        # Perform the requested operation
+        if operation == "reset-password":
+            result = await batch_reset_password_service(
+                batch_request.user_ids, batch_request.value
+            )
+        elif operation == "active":
+            result = await batch_activate_users_service(batch_request.user_ids)
+        elif operation == "inactive":
+            result = await batch_deactivate_users_service(batch_request.user_ids)
+        elif operation == "reset-face":
+            result = await batch_reset_face_data_service(batch_request.user_ids)
+        else:
+            # This shouldn't happen due to validation above, but added for completeness
+            raise HTTPException(status_code=500, detail="Unsupported operation")
+
+        return DataResponse[BatchOperationResult](
+            success=True, message=f"Batch {operation} operation completed", data=result
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error performing batch operation: {str(e)}",
         ) from e
 
 
