@@ -58,6 +58,8 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
             "recognized": False,
             "message": "No face detected in the image",
             "token": None,
+            "code": 400,
+            "token_type": "bearer"
         }
 
     # Extract features from the face
@@ -89,6 +91,7 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
             "message": "Face not recognized in the database",
             "token": None,
             "token_type": "bearer",
+            "code": 401,
         }
 
     # Get the best match
@@ -109,6 +112,8 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         "user_id": user_id,
         "confidence": 1 - best_match["distance"],  # Convert distance to similarity
         "token": access_token,
+        "token_type": "bearer",
+        "code": 200,
     }
 
 
