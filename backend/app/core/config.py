@@ -7,7 +7,7 @@ for the application, including database connections, model parameters, and secur
 
 import os
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict, YamlConfigSettingsSource
 
 
 class Config(BaseSettings):
@@ -94,6 +94,21 @@ class Config(BaseSettings):
     model_config = SettingsConfigDict(
         env_file=(".env", ".env.prod"),
         env_file_encoding="utf-8",
-        yaml_file=("config.yaml", "config_prod.yaml"),
-        yaml_file_encoding="utf-8",
     )
+    
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls,
+        init_settings,
+        env_settings,
+        dotenv_settings,
+        file_secret_settings,
+    ):
+        return (
+            init_settings,
+            YamlConfigSettingsSource(settings_cls, yaml_file="config.yaml"),
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+        )
