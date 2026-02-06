@@ -32,18 +32,13 @@
           </div>
 
           <el-card>
-            <el-table 
-              :data="users" 
-              style="width: 100%" 
-              v-loading="loading"
-              @selection-change="handleSelectionChange"
-            >
+            <el-table :data="users" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
               <el-table-column type="selection" width="55"></el-table-column>
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
               <el-table-column prop="username" label="Username" width="120"></el-table-column>
               <el-table-column prop="email" label="Email" min-width="200"></el-table-column>
-              <el-table-column prop="full_name" label="Full Name" width="120"></el-table-column>
-              <el-table-column prop="head_pic" label="Face Data" min-width="150">
+              <el-table-column prop="full_name" label="Full Name" width="200"></el-table-column>
+              <el-table-column prop="head_pic" label="Face Data" min-width="100">
                 <template #default="scope">
                   <el-button :type="scope.row.head_pic === '1' ? 'success' : 'danger'" size="small"
                     @click="openFaceDetection(scope.row)" @mouseenter="handleMouseEnter(scope.row.id)"
@@ -65,33 +60,32 @@
               </el-table-column>
               <el-table-column prop="is_active" label="Status" width="80">
                 <template #default="scope">
-                  <el-switch
-                    v-model="scope.row.is_active"
-                    :active-value="true"
-                    :inactive-value="false"
-                    @change="handleStatusChange(scope.row)"
-                    :loading="statusLoading[scope.row.id]"
-                  >
+                  <el-switch v-model="scope.row.is_active" :active-value="true" :inactive-value="false"
+                    @change="handleStatusChange(scope.row)" :loading="statusLoading[scope.row.id]">
                     <template #active-action>
-                      <el-icon><CircleCheckFilled /></el-icon>
+                      <el-icon>
+                        <CircleCheckFilled />
+                      </el-icon>
                     </template>
                     <template #inactive-action>
-                      <el-icon><RemoveFilled /></el-icon>
+                      <el-icon>
+                        <RemoveFilled />
+                      </el-icon>
                     </template>
                   </el-switch>
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="Created" width="180">
+              <el-table-column prop="created_at" label="Created" width="160">
                 <template #default="scope">
                   {{ formatDate(scope.row.created_at) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="updated_at" label="Last Updated" width="180">
+              <el-table-column prop="updated_at" label="Last Updated" width="160">
                 <template #default="scope">
                   {{ formatDate(scope.row.updated_at) }}
                 </template>
               </el-table-column>
-              <el-table-column label="Actions" min-width="220" fixed="right">
+              <el-table-column label="Actions" min-width="140" fixed="right">
                 <template #default="scope">
                   <el-button size="small" @click="editUser(scope.row)" type="primary">
                     <el-icon>
@@ -149,10 +143,14 @@
           <el-form-item label="Status">
             <el-switch v-model="userForm.is_active">
               <template #active-action>
-                <el-icon><CircleCheckFilled /></el-icon>
+                <el-icon>
+                  <CircleCheckFilled />
+                </el-icon>
               </template>
               <template #inactive-action>
-                <el-icon><RemoveFilled /></el-icon>
+                <el-icon>
+                  <RemoveFilled />
+                </el-icon>
               </template>
             </el-switch>
           </el-form-item>
@@ -176,49 +174,42 @@
     </el-drawer>
 
     <!-- 密码重置对话框 -->
-    <el-dialog
-      v-model="passwordResetDialogVisible"
-      title="Reset Password"
-      width="400px"
-      :before-close="handlePasswordResetCancel"
-    >
-      <el-form
-        :model="{ newPassword }"
-        :rules="passwordResetRules"
-        ref="passwordResetFormRef"
-        label-width="120px"
-      >
+    <el-dialog v-model="passwordResetDialogVisible" title="Reset Password" width="400px"
+      :before-close="handlePasswordResetCancel">
+      <el-form :model="{ newPassword, confirmPassword }" :rules="passwordResetRules" ref="passwordResetFormRef"
+        label-width="120px">
         <el-form-item label="New Password" prop="newPassword">
-          <el-input
-            v-model="newPassword"
-            type="password"
-            placeholder="Enter new password"
-            show-password
-          ></el-input>
+          <el-input v-model="newPassword" type="password" placeholder="Enter new password" show-password
+            @input="validatePasswordMatch"></el-input>
         </el-form-item>
-        <el-form-item label="Confirm Password" prop="confirmPassword">
-          <el-input
-            v-model="confirmPassword"
-            type="password"
-            placeholder="Confirm new password"
-            show-password
-          ></el-input>
+        <el-form-item label="Confirm Password" prop="confirmPassword" :validate-status="passwordMatchStatus"
+          :help="passwordMatchMessage">
+          <el-input v-model="confirmPassword" type="password" placeholder="Confirm new password" show-password
+            @input="validatePasswordMatch">
+            <template #suffix>
+              <el-icon v-if="passwordMatchStatus === 'success'" class="password-match-icon success">
+                <Check />
+              </el-icon>
+              <el-icon v-else-if="passwordMatchStatus === 'error'" class="password-match-icon error">
+                <Close />
+              </el-icon>
+            </template>
+          </el-input>
         </el-form-item>
       </el-form>
-      
+
       <template #footer>
         <div class="dialog-footer">
           <el-button @click="handlePasswordResetCancel">Cancel</el-button>
-          <el-button 
-            type="primary" 
-            @click="confirmPasswordReset"
-            :loading="submitting"
-          >
+          <el-button type="primary" @click="confirmPasswordReset" :loading="submitting" :disabled="!isPasswordValid">
             Reset Password
           </el-button>
         </div>
       </template>
     </el-dialog>
+
+    <!-- Face Detection Pop-out Window -->
+    <FaceDetectionPopOut v-model="showFaceDetectionPopOut" :_handler="updateUserFace" />
   </div>
 </template>
 
@@ -226,7 +217,7 @@
 import { ref, reactive, onMounted, computed } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Refresh, CircleCheckFilled, RemoveFilled, Operation, ArrowDown } from '@element-plus/icons-vue'
+import { Plus, Refresh, CircleCheckFilled, RemoveFilled, Operation, ArrowDown, Check, Close } from '@element-plus/icons-vue'
 import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
@@ -236,7 +227,7 @@ const loading = ref(false)
 const submitting = ref(false)
 const userFormRef = ref()
 const drawerVisible = ref(false)
-const faceDetectionVisible = ref(false)
+const showFaceDetectionPopOut = ref(false)  // Changed from faceDetectionVisible
 const currentUserToken = ref('')
 const selectedUserForFace = ref(null)
 const currentUserRole = ref(false) // 当前用户是否为管理员
@@ -251,6 +242,10 @@ const passwordResetDialogVisible = ref(false)
 const newPassword = ref('')
 const confirmPassword = ref('')
 const passwordResetFormRef = ref()
+
+// 添加密码确认验证状态
+const passwordMatchStatus = ref('')
+const passwordMatchMessage = ref('')
 
 const userForm = reactive({
   id: undefined,
@@ -293,16 +288,7 @@ const passwordResetRules = computed(() => {
     ],
     confirmPassword: [
       { required: true, message: 'Please confirm the password', trigger: 'blur' },
-      {
-        validator: (rule, value, callback) => {
-          if (value !== newPassword.value) {
-            callback(new Error('Passwords do not match'))
-          } else {
-            callback()
-          }
-        },
-        trigger: 'blur'
-      }
+      { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
     ]
   }
 })
@@ -436,14 +422,14 @@ const submitForm = async () => {
     if (userForm.id) {
       // Update existing user
       response = await axios.put(
-        `${API_BASE_URL}/api/v1/users/${userForm.id}`,
+        `${API_BASE_URL}/api/v1/admin/users/${userForm.id}`,
         userData,
         { headers }
       )
     } else {
       // Create new user
       response = await axios.post(
-        `${API_BASE_URL}/api/v1/users/`,
+        `${API_BASE_URL}/api/v1/admin/users/`,
         {
           ...userData,
           password: userForm.password
@@ -474,7 +460,7 @@ const submitForm = async () => {
 
 const openFaceDetection = (user) => {
   selectedUserForFace.value = user
-  faceDetectionVisible.value = true
+  showFaceDetectionPopOut.value = true  // Changed from faceDetectionVisible.value = true
 }
 
 // 添加鼠标事件处理方法
@@ -486,29 +472,87 @@ const handleMouseLeave = () => {
   hoveredUserId.value = null
 }
 
-const handleFaceCaptured = async (imageData) => {
+
+// Function to update a user's face as an admin
+const updateUserFace = async (imageData) => {
   try {
-    // 更新用户列表中对应用户的人脸状态
-    const userIndex = users.value.findIndex(u => u.id === selectedUserForFace.value.id)
-    if (userIndex !== -1) {
-      users.value[userIndex].head_pic = '1' // 标记为已录入人脸数据
+    // Create FormData to send image as form data
+    const formData = new FormData();
+
+    // get userId
+    const userId = selectedUserForFace.value.id;
+
+    // get token
+    const token = localStorage.getItem('token') || '';
+
+    // Convert base64 image data to blob and append to form data
+    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+      const byteNumbers = new Array(slice.length);
+
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
     }
 
-    ElMessage.success('Face data updated successfully')
-    selectedUserForFace.value = null
+    const blob = new Blob(byteArrays, { type: 'image/jpeg' });
+    formData.append('image', blob, 'face_image.jpg');
+
+    // Upload the captured image to update the specified user's face
+    const response = await axios.put(
+      `${API_BASE_URL}/api/v1/admin/face/${userId}`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    // Check if response has the expected structure with 'code' field
+    if (response.data.code === 200 || response.data.success) {
+      ElMessage.success(response.data.message || 'Face image updated successfully');
+
+      // Update user list to reflect the new face data
+      const userIndex = users.value.findIndex(u => u.id === userId);
+      if (userIndex !== -1) {
+        users.value[userIndex].head_pic = '1'; // Mark as having face data
+      }
+    } else {
+      ElMessage.error(response.data.message || 'Failed to update face image');
+    }
+
+    // return response.data;
   } catch (error) {
-    console.error('Error handling face capture:', error)
-    ElMessage.error('Failed to update face data')
+    console.error('Error updating user face image:', error);
+    if (error.response?.data?.detail) {
+      ElMessage.error(error.response.data.detail);
+    } else {
+      ElMessage.error(error.message || 'An error occurred while updating face image');
+    }
+    throw error;
+  }
+  finally {
+
+    // refresh user list
+    fetchUsers();
   }
 }
 
 const handleStatusChange = async (user) => {
   try {
     statusLoading.value[user.id] = true
-    
+
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
-    
+
     const response = await axios.put(
       `${API_BASE_URL}/api/v1/admin/users/${user.id}`,
       {
@@ -516,7 +560,7 @@ const handleStatusChange = async (user) => {
       },
       { headers }
     )
-    
+
     if (response.data.success) {
       ElMessage.success(`User ${user.is_active ? 'activated' : 'deactivated'} successfully`)
     } else {
@@ -625,7 +669,7 @@ const batchUpdateStatus = async (isActive) => {
     if (response.data.success) {
       const result = response.data.data
       ElMessage.success(`Successfully ${isActive ? 'activated' : 'deactivated'} ${result.success_count} of ${result.total_count} user(s)`)
-      
+
       // 更新本地用户状态
       selectedUsers.value.forEach(user => {
         const userIndex = users.value.findIndex(u => u.id === user.id)
@@ -662,6 +706,8 @@ const batchResetPassword = async () => {
     // Show password input dialog
     newPassword.value = ''
     confirmPassword.value = ''
+    passwordMatchStatus.value = ''
+    passwordMatchMessage.value = ''
     passwordResetDialogVisible.value = true
   } catch (error) {
     if (error !== 'cancel') {
@@ -678,7 +724,7 @@ const confirmPasswordReset = async () => {
   }
 
   submitting.value = true
-  
+
   try {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
@@ -713,10 +759,36 @@ const confirmPasswordReset = async () => {
   }
 }
 
+// 密码匹配验证方法
+const validatePasswordMatch = () => {
+  if (!confirmPassword.value) {
+    passwordMatchStatus.value = ''
+    passwordMatchMessage.value = ''
+    return
+  }
+
+  if (newPassword.value !== confirmPassword.value) {
+    passwordMatchStatus.value = 'error'
+    passwordMatchMessage.value = 'Passwords do not match'
+  } else {
+    passwordMatchStatus.value = 'success'
+    passwordMatchMessage.value = 'Passwords match'
+  }
+}
+
+// 计算密码是否有效（用于禁用提交按钮）
+const isPasswordValid = computed(() => {
+  return newPassword.value.length >= 6 &&
+    confirmPassword.value.length >= 6 &&
+    newPassword.value === confirmPassword.value
+})
+
 const handlePasswordResetCancel = () => {
   passwordResetDialogVisible.value = false
   newPassword.value = ''
   confirmPassword.value = ''
+  passwordMatchStatus.value = ''
+  passwordMatchMessage.value = ''
   passwordResetFormRef.value?.clearValidate()
 }
 
@@ -747,7 +819,7 @@ const batchDeleteFace = async () => {
     if (response.data.success) {
       const result = response.data.data
       ElMessage.success(`Successfully deleted face data for ${result.success_count} of ${result.total_count} user(s)`)
-      
+
       // 更新用户列表中的人脸状态
       selectedUsers.value.forEach(user => {
         const userIndex = users.value.findIndex(u => u.id === user.id)
@@ -770,6 +842,7 @@ const batchDeleteFace = async () => {
 }
 
 </script>
+
 
 <style scoped>
 .user-manager {
@@ -849,12 +922,12 @@ const batchDeleteFace = async () => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .header-buttons {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .selection-info {
     margin-left: 0;
     margin-top: 10px;
@@ -868,16 +941,16 @@ const batchDeleteFace = async () => {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .header-buttons {
     justify-content: center;
   }
-  
+
   .table-footer {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .footer-actions {
     justify-content: center;
   }
