@@ -613,24 +613,28 @@ const batchUpdateStatus = async (isActive) => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 并行处理所有用户的更新
-    const updatePromises = selectedUsers.value.map(user =>
-      axios.put(
-        `${API_BASE_URL}/api/v1/admin/users/${user.id}`,
-        { is_active: isActive },
-        { headers }
-      )
+    // 使用新的批量操作API端点
+    const response = await axios.post(
+      `${API_BASE_URL}/api/v1/admin/batch/${isActive ? 'active' : 'inactive'}`,
+      {
+        user_ids: selectedUsers.value.map(user => user.id)
+      },
+      { headers }
     )
 
-    const results = await Promise.all(updatePromises)
-    
-    // 检查是否有失败的操作
-    const successCount = results.filter(result => result.data.success).length
-    
-    if (successCount === selectedUsers.value.length) {
-      ElMessage.success(`Successfully ${isActive ? 'activated' : 'deactivated'} ${successCount} user(s)`)
+    if (response.data.success) {
+      const result = response.data.data
+      ElMessage.success(`Successfully ${isActive ? 'activated' : 'deactivated'} ${result.success_count} of ${result.total_count} user(s)`)
+      
+      // 更新本地用户状态
+      selectedUsers.value.forEach(user => {
+        const userIndex = users.value.findIndex(u => u.id === user.id)
+        if (userIndex !== -1) {
+          users.value[userIndex].is_active = isActive
+        }
+      })
     } else {
-      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} users ${isActive ? 'activated' : 'deactivated'}`)
+      ElMessage.error(response.data.message || 'Batch operation failed')
     }
 
     // 清除选择并刷新列表
@@ -638,7 +642,7 @@ const batchUpdateStatus = async (isActive) => {
     fetchUsers()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('Batch operation failed')
+      ElMessage.error(error.response?.data?.detail || 'Batch operation failed')
     }
   }
 }
@@ -679,24 +683,21 @@ const confirmPasswordReset = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 并行处理所有用户的密码重置
-    const resetPromises = selectedUsers.value.map(user =>
-      axios.put(
-        `${API_BASE_URL}/api/v1/admin/users/${user.id}/reset-password`,
-        { new_password: newPassword.value },
-        { headers }
-      )
+    // 使用新的批量重置密码API端点
+    const response = await axios.post(
+      `${API_BASE_URL}/api/v1/admin/batch/reset-password`,
+      {
+        user_ids: selectedUsers.value.map(user => user.id),
+        value: newPassword.value
+      },
+      { headers }
     )
 
-    const results = await Promise.all(resetPromises)
-    
-    // 检查是否有失败的操作
-    const successCount = results.filter(result => result.data.success).length
-    
-    if (successCount === selectedUsers.value.length) {
-      ElMessage.success(`Successfully reset passwords for ${successCount} user(s)`)
+    if (response.data.success) {
+      const result = response.data.data
+      ElMessage.success(`Successfully reset passwords for ${result.success_count} of ${result.total_count} user(s)`)
     } else {
-      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} passwords reset`)
+      ElMessage.error(response.data.message || 'Password reset failed')
     }
 
     // 关闭对话框并清除选择
@@ -706,7 +707,7 @@ const confirmPasswordReset = async () => {
     selectedUsers.value = []
     fetchUsers()
   } catch (error) {
-    ElMessage.error('Password reset failed')
+    ElMessage.error(error.response?.data?.detail || 'Password reset failed')
   } finally {
     submitting.value = false
   }
@@ -734,39 +735,36 @@ const batchDeleteFace = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 并行处理所有用户的面部数据删除
-    const deletePromises = selectedUsers.value.map(user =>
-      axios.delete(
-        `${API_BASE_URL}/api/v1/admin/users/${user.id}/face-data`,
-        { headers }
-      )
+    // 使用新的批量重置面部数据API端点
+    const response = await axios.post(
+      `${API_BASE_URL}/api/v1/admin/batch/reset-face`,
+      {
+        user_ids: selectedUsers.value.map(user => user.id)
+      },
+      { headers }
     )
 
-    const results = await Promise.all(deletePromises)
-    
-    // 检查是否有失败的操作
-    const successCount = results.filter(result => result.data.success).length
-    
-    if (successCount === selectedUsers.value.length) {
-      ElMessage.success(`Successfully deleted face data for ${successCount} user(s)`)
+    if (response.data.success) {
+      const result = response.data.data
+      ElMessage.success(`Successfully deleted face data for ${result.success_count} of ${result.total_count} user(s)`)
+      
+      // 更新用户列表中的人脸状态
+      selectedUsers.value.forEach(user => {
+        const userIndex = users.value.findIndex(u => u.id === user.id)
+        if (userIndex !== -1) {
+          users.value[userIndex].head_pic = '0' // 标记为人脸数据已删除
+        }
+      })
     } else {
-      ElMessage.warning(`Partially completed: ${successCount} of ${selectedUsers.value.length} face data deleted`)
+      ElMessage.error(response.data.message || 'Face data deletion failed')
     }
-
-    // 更新用户列表中的人脸状态
-    selectedUsers.value.forEach(user => {
-      const userIndex = users.value.findIndex(u => u.id === user.id)
-      if (userIndex !== -1) {
-        users.value[userIndex].head_pic = '0' // 标记为人脸数据已删除
-      }
-    })
 
     // 清除选择并刷新列表
     selectedUsers.value = []
     fetchUsers()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('Batch face data deletion failed')
+      ElMessage.error(error.response?.data?.detail || 'Face data deletion failed')
     }
   }
 }
