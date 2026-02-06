@@ -13,11 +13,15 @@
           <div class="button-group">
             <el-button type="primary" @click="handleLogin" :loading="loginLoading">Login</el-button>
             <el-button @click="resetForm">Reset</el-button>
+            <el-button @click="openFaceRecognizer">Login with Face</el-button>
           </div>
         </el-form-item>
       </el-form>
       <p>Don't have an account? <router-link to="/signup">Sign Up</router-link></p>
     </el-card>
+    
+    <!-- Face Recognizer Pop Out Component -->
+    <FaceRecongnizerPopOut v-model="faceRecognizerVisible" @face-verified="handleFaceVerification" />
   </div>
 </template>
 
@@ -26,6 +30,7 @@ import { ref, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
+import FaceRecongnizerPopOut from '@/components/FaceRecongnizerPopOut.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -34,6 +39,9 @@ const loginForm = reactive({
   username: '',
   password: ''
 })
+
+// State for face recognizer popup
+const faceRecognizerVisible = ref(false)
 
 const loginRules = {
   username: [
@@ -94,6 +102,36 @@ const handleLogin = async () => {
 const resetForm = () => {
   loginFormRef.value.resetFields()
 }
+
+// Open the face recognizer popup
+const openFaceRecognizer = () => {
+  faceRecognizerVisible.value = true
+}
+
+// Handle face verification success
+const handleFaceVerification = (verificationData) => {
+  if (verificationData && verificationData.token) {
+    // Store the access token in localStorage with the correct key
+    localStorage.setItem('token', `${verificationData.token}`)
+    localStorage.setItem('token_type', `${verificationData.token_type || 'bearer'}`)
+    
+    // Store username from verification data if available
+    if (verificationData.username) {
+      localStorage.setItem('username', verificationData.username)
+    }
+    
+    ElMessage.success('Face login successful!')
+    
+    // Close the popup
+    faceRecognizerVisible.value = false
+    
+    // Redirect to the intended page or home page
+    const redirectPath = route.query.redirect || '/user'
+    router.push(redirectPath)
+  } else {
+    ElMessage.error('Face verification failed. Please try again.')
+  }
+}
 </script>
 
 <style scoped>
@@ -101,27 +139,25 @@ const resetForm = () => {
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100vh;
-  background-color: #f0f2f5;
-}
-
-.login-card {
-  width: 400px;
+  min-height: 100vh;
+  background-color: #f5f5f5;
   padding: 20px;
 }
 
-.login-form {
-  margin-top: 20px;
+.login-card {
+  width: 100%;
+  max-width: 500px;
+  padding: 30px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .button-group {
   display: flex;
-  gap: 12px;
-  width: 100%;
+  gap: 10px;
   justify-content: center;
 }
 
-.button-group .el-button {
-  flex: 1;
+.login-form {
+  margin-bottom: 20px;
 }
 </style>

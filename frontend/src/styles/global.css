@@ -89,6 +89,7 @@
   padding: 25px;
   min-height: calc(100vh - 140px);
   background-color: #fafafa;
+  min-width: calc(100vw - 160px);
 }
 
 /* Responsive grid adjustments */
