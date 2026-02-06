@@ -60,18 +60,20 @@
             <el-form-item label="Face Image:">
               <div class="head-pic-container">
                 <div v-if="userInfo.head_pic" class="head-pic-preview">
-                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview" class="head-pic-image" />
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview"
+                    class="head-pic-image" />
                 </div>
                 <div v-else class="head-pic-placeholder">
                   Image not uploaded
                 </div>
-                
+
                 <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
-                  @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
-                  class="face-image-btn">
+                  @click="updateFace" @mouseenter="isHoveringFaceButton = true"
+                  @mouseleave="isHoveringFaceButton = false" class="face-image-btn">
                   <span class="button-text">
-                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
-                      'Face is set' : 'Face is not set') }}
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') :
+                      (userInfo.head_pic ?
+                        'Face is set' : 'Face is not set') }}
                   </span>
                 </el-button>
               </div>
@@ -117,18 +119,20 @@
             <el-form-item label="Face Image:">
               <div class="head-pic-container">
                 <div v-if="userInfo.head_pic" class="head-pic-preview">
-                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview" class="head-pic-image" />
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview"
+                    class="head-pic-image" />
                 </div>
                 <div v-else class="head-pic-placeholder">
                   Image not uploaded
                 </div>
-                
+
                 <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
-                  @click="updateFace" @mouseenter="isHoveringFaceButton = true" @mouseleave="isHoveringFaceButton = false"
-                  class="face-image-btn">
+                  @click="updateFace" @mouseenter="isHoveringFaceButton = true"
+                  @mouseleave="isHoveringFaceButton = false" class="face-image-btn">
                   <span class="button-text">
-                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') : (userInfo.head_pic ?
-                      'Face is set' : 'Face is not set') }}
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') :
+                      (userInfo.head_pic ?
+                        'Face is set' : 'Face is not set') }}
                   </span>
                 </el-button>
               </div>
@@ -164,17 +168,14 @@
         </el-table>
       </el-card>
     </div>
-    
+
     <!-- Face Detection Pop-out Window -->
-    <FaceDetectionPopOut 
-      v-model="showFaceDetectionPopOut" 
-      :token="getToken()"
-    />
+    <FaceDetectionPopOut v-model="showFaceDetectionPopOut" :_handler="handleFaceCaptured" />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, inject, watch } from 'vue';
+import { ref, inject, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
@@ -251,6 +252,11 @@ const startEditing = () => {
   editing.value = true;
 };
 
+// Function to get token from localStorage
+const getToken = () => {
+  return localStorage.getItem('token') || '';
+};
+
 // Save profile changes
 const saveProfile = async () => {
   // Validate form before submitting
@@ -265,7 +271,7 @@ const saveProfile = async () => {
   updating.value = true;
 
   try {
-    const token = localStorage.getItem('token');
+    const token = getToken();
 
     // Prepare request data without password initially
     const requestData = {
@@ -375,9 +381,66 @@ watch(authError, (newVal) => {
   }
 });
 
-// Function to get token from localStorage
-const getToken = () => {
-  return localStorage.getItem('token') || '';
+
+
+// Function to handle face captured from pop-out window
+const handleFaceCaptured = async (imageData) => {
+  try {
+    // Create FormData to send image as form data
+    const formData = new FormData();
+
+    // get token
+    const token = getToken();
+
+    // Convert base64 image data to blob and append to form data
+    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+    const byteArrays = [];
+
+    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
+      const slice = byteCharacters.slice(offset, offset + 512);
+      const byteNumbers = new Array(slice.length);
+
+      for (let i = 0; i < slice.length; i++) {
+        byteNumbers[i] = slice.charCodeAt(i);
+      }
+
+      const byteArray = new Uint8Array(byteNumbers);
+      byteArrays.push(byteArray);
+    }
+
+    const blob = new Blob(byteArrays, { type: 'image/jpeg' });
+    formData.append('image', blob, 'face_image.jpg');
+
+    // Upload the captured image to update the user's head pic
+    const response = await axios.put(
+      `${API_BASE_URL}/api/v1/face/me`,
+      formData,
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      }
+    );
+
+    // Check if response has the expected structure with 'code' field
+    if (response.data.code === 200 || response.data.success) {
+      ElMessage.success(response.data.message || 'Face image updated successfully');
+      // Update user info to reflect the new head pic
+      if (injectedUserInfo && injectedUserInfo.value) {
+        injectedUserInfo.value.head_pic = imageData.split(',')[1]; // Store just the base64 part
+      }
+    } else {
+      ElMessage.error(response.data.message || 'Failed to update face image');
+    }
+  } catch (error) {
+    console.error('Error updating face image:', error);
+    if (error.response?.data?.detail) {
+      ElMessage.error(error.response.data.detail);
+    } else {
+      ElMessage.error(error.message || 'An error occurred while updating face image');
+    }
+  }
 };
 
 </script>
