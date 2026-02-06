@@ -51,7 +51,7 @@
       
       <div class="confirmation-buttons" v-if="capturedImage">
         <el-button @click="retakeImage">Retake</el-button>
-        <el-button type="success" @click="confirmAndSendImage" class="confirm-btn">
+        <el-button type="success" @click="confirmAndSendImage(props._handler)" class="confirm-btn">
           <el-icon>
             <Check />
           </el-icon>
@@ -81,9 +81,9 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
-  token: {
-    type: String,
-    default: ''
+  _handler: {
+    type: Function,
+    default: null
   }
 })
 
@@ -105,7 +105,7 @@ const isCameraOpen = ref(false)
 const loadingModels = ref(true)
 const modelLoadProgress = ref(0)
 const flipEnabled = ref(false)
-const capturedImage = ref(null) // Store the captured image
+const capturedImage = ref("") // Store the captured image
 let stream = null
 let faceapi = null
 let detectionInterval = null
@@ -300,60 +300,6 @@ const startFaceDetectionLoop = async () => {
   }
 }
 
-// Function to handle face captured from pop-out window
-const handleFaceCaptured = async (imageData, token) => {
-  try {
-    // Create FormData to send image as form data
-    const formData = new FormData();
-    
-    // Convert base64 image data to blob and append to form data
-    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
-    const byteArrays = [];
-    
-    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-      const slice = byteCharacters.slice(offset, offset + 512);
-      const byteNumbers = new Array(slice.length);
-      
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-      
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
-    }
-    
-    const blob = new Blob(byteArrays, { type: 'image/jpeg' });
-    formData.append('image', blob, 'face_image.jpg');
-
-    // Upload the captured image to update the user's head pic
-    const response = await axios.put(
-      `${API_BASE_URL}/api/v1/face/me`,
-      formData,
-      {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
-
-    // Check if response has the expected structure with 'code' field
-    if (response.data.code === 200 || response.data.success) {
-      ElMessage.success(response.data.message || 'Face image updated successfully');
-      emit('faceCaptured', imageData); // Emit event with captured image data
-    } else {
-      ElMessage.error(response.data.message || 'Failed to update face image');
-    }
-  } catch (error) {
-    console.error('Error updating face image:', error);
-    if (error.response?.data?.detail) {
-      ElMessage.error(error.response.data.detail);
-    } else {
-      ElMessage.error(error.message || 'An error occurred while updating face image');
-    }
-  }
-};
-
 // Function to capture image when button is clicked
 const captureImage = () => {
   if (!videoRef.value) return
@@ -390,9 +336,11 @@ const retakeImage = () => {
 }
 
 // Function to confirm and send the image
-const confirmAndSendImage = () => {
-  if (capturedImage.value && props.token) {
-    handleFaceCaptured(capturedImage.value, props.token)
+const confirmAndSendImage = (_handler) => {
+  if (capturedImage.value) {
+    if (_handler && typeof _handler === 'function') {
+      _handler(capturedImage.value)
+    }
     handleClose() // Close the dialog after sending
   }
 }
