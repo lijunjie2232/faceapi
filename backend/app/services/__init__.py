@@ -12,6 +12,10 @@ from .admin import (
     list_users_service,
     update_user_as_admin_service,
     validate_user_update_uniqueness,
+    batch_reset_password_service,
+    batch_activate_users_service,
+    batch_deactivate_users_service,
+    batch_reset_face_data_service,
 )
 from .face import update_face_embedding_service, verify_face_service
 from .user import (
@@ -19,7 +23,6 @@ from .user import (
     delete_user_account_service,
     get_current_user_profile_service,
     get_user_service,
-    update_user_profile_service,
 )
 
 __ALL__ = [
@@ -36,4 +39,8 @@ __ALL__ = [
     "delete_user_account_service",
     "get_current_user_profile_service",
     "get_user_service",
+    "batch_reset_password_service",
+    "batch_activate_users_service",
+    "batch_deactivate_users_service",
+    "batch_reset_face_data_service",
 ]
