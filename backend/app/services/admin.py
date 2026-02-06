@@ -5,9 +5,11 @@ This module contains business logic for administrative operations
 including user management functionalities.
 """
 
+from typing import List
 from ..models.user import UserModel
-from ..schemas import User, UserCreateAsAdmin, UserUpdateAsAdmin
-from ..utils.pass_utils import hash_password
+from ..db import FACE_FEATURES_COLLECTION, get_milvus_client
+from ..schemas import User, UserCreateAsAdmin, UserUpdateAsAdmin, BatchOperationResult
+from ..utils import hash_password, load_collection
 
 
 async def list_users_service(skip: int = 0, limit: int = 100):
@@ -159,3 +161,149 @@ async def validate_user_update_uniqueness(user_id: int, user_update: UserUpdateA
             return "Email already registered"
 
     return None
+
+
+async def batch_reset_password_service(
+    user_ids: List[int], new_password: str
+) -> BatchOperationResult:
+    """
+    Service function to reset passwords for multiple users.
+
+    Args:
+        user_ids: List of user IDs to reset passwords for
+        new_password: New password to set for all users
+
+    Returns:
+        BatchOperationResult containing success/failure statistics
+    """
+    success_count = 0
+    failed_users = []
+
+    hashed_password = hash_password(new_password)
+
+    for user_id in user_ids:
+        try:
+            result = await UserModel.filter(id=user_id).update(
+                hashed_password=hashed_password
+            )
+            if result > 0:
+                success_count += 1
+            else:
+                failed_users.append(user_id)
+        except Exception:
+            failed_users.append(user_id)
+
+    return BatchOperationResult(
+        success_count=success_count,
+        failed_count=len(failed_users),
+        total_count=len(user_ids),
+        failed_users=failed_users,
+        operation="reset-password",
+    )
+
+
+async def batch_activate_users_service(user_ids: List[int]) -> BatchOperationResult:
+    """
+    Service function to activate multiple users.
+
+    Args:
+        user_ids: List of user IDs to activate
+
+    Returns:
+        BatchOperationResult containing success/failure statistics
+    """
+    success_count = 0
+    failed_users = []
+
+    for user_id in user_ids:
+        try:
+            result = await UserModel.filter(id=user_id).update(is_active=True)
+            if result > 0:
+                success_count += 1
+            else:
+                failed_users.append(user_id)
+        except Exception:
+            failed_users.append(user_id)
+
+    return BatchOperationResult(
+        success_count=success_count,
+        failed_count=len(failed_users),
+        total_count=len(user_ids),
+        failed_users=failed_users,
+        operation="active",
+    )
+
+
+async def batch_deactivate_users_service(user_ids: List[int]) -> BatchOperationResult:
+    """
+    Service function to deactivate multiple users.
+
+    Args:
+        user_ids: List of user IDs to deactivate
+
+    Returns:
+        BatchOperationResult containing success/failure statistics
+    """
+    success_count = 0
+    failed_users = []
+
+    for user_id in user_ids:
+        try:
+            result = await UserModel.filter(id=user_id).update(is_active=False)
+            if result > 0:
+                success_count += 1
+            else:
+                failed_users.append(user_id)
+        except Exception:
+            failed_users.append(user_id)
+
+    return BatchOperationResult(
+        success_count=success_count,
+        failed_count=len(failed_users),
+        total_count=len(user_ids),
+        failed_users=failed_users,
+        operation="inactive",
+    )
+
+
+async def batch_reset_face_data_service(user_ids: List[int]) -> BatchOperationResult:
+    """
+    Service function to reset face data for multiple users.
+
+    Args:
+        user_ids: List of user IDs to reset face data for
+
+    Returns:
+        BatchOperationResult containing success/failure statistics
+    """
+    success_count = 0
+    failed_users = []
+    # Get the shared Milvus client
+    milvus_client = get_milvus_client()
+
+    await load_collection(FACE_FEATURES_COLLECTION)
+
+    for user_id in user_ids:
+        try:
+            result = await UserModel.filter(id=user_id).update(head_pic=None)
+
+            if result > 0:
+                success_count += 1
+            else:
+                failed_users.append(user_id)
+
+            milvus_client.delete(
+                collection_name=FACE_FEATURES_COLLECTION,
+                ids=[user_id],
+            )
+
+        except Exception:
+            failed_users.append(user_id)
+
+    return BatchOperationResult(
+        success_count=success_count,
+        failed_count=len(failed_users),
+        total_count=len(user_ids),
+        failed_users=failed_users,
+        operation="reset-face",
+    )
