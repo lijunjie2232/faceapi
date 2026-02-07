@@ -19,7 +19,7 @@
       </el-form>
       <p>Don't have an account? <router-link to="/signup">Sign Up</router-link></p>
     </el-card>
-    
+
     <!-- Face Recognizer Pop Out Component -->
     <FaceRecongnizerPopOut v-model="faceRecognizerVisible" @face-verified="handleFaceVerification" />
   </div>
@@ -57,7 +57,7 @@ const loginFormRef = ref()
 const loginLoading = ref(false)
 
 const handleLogin = async () => {
-  const valid = await loginFormRef.value.validate().catch(() => {})
+  const valid = await loginFormRef.value.validate().catch(() => { })
   if (!valid) return
 
   loginLoading.value = true
@@ -65,34 +65,33 @@ const handleLogin = async () => {
     const formData = new FormData()
     formData.append('username', loginForm.username)
     formData.append('password', loginForm.password)
-    
+
     // Using the environment variable for API base URL
     const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/login`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
-    
-    // Handle the response according to the actual format
-    const { access_token, token_type } = response.data
-    
-    // Store the access token in localStorage with the correct key
-    localStorage.setItem('token', `${access_token}`)
-    localStorage.setItem('token_type', `${token_type}`)
 
-    console.log('Login successful:', response.data)
-    
-    // Also store username for display in header
-    localStorage.setItem('username', loginForm.username)
-    
-    ElMessage.success('Login successful!')
-    
-    // 获取路由参数中的重定向路径，如果有的话
-    const redirectPath = route.query.redirect || '/user'
-    // Redirect to the intended page or home page
-    router.push(redirectPath)
+    // Handle the response according to the actual format
+    if (response.code !== 200) {
+      const { token, token_type } = response.data.data
+
+      // Store the access token in localStorage with the correct key
+      localStorage.setItem('token', `${token}`)
+      localStorage.setItem('token_type', `${token_type}`)
+
+      ElMessage.success('Login successful!')
+
+      // 获取路由参数中的重定向路径，如果有的话
+      const redirectPath = route.query.redirect || '/user'
+      // Redirect to the intended page or home page
+      router.push(redirectPath)
+    } else {
+      ElMessage.error(response.message || 'Login failed')
+    }
   } catch (error) {
-    console.error('Login error:', error)
+    // console.error('Login error:', error)
     ElMessage.error(error.response?.data?.detail || 'Login failed')
   } finally {
     loginLoading.value = false
@@ -112,19 +111,14 @@ const openFaceRecognizer = () => {
 const handleFaceVerification = (verificationData) => {
   if (verificationData && verificationData.token) {
     // Store the access token in localStorage with the correct key
-    localStorage.setItem('token', `${verificationData.token}`)
-    localStorage.setItem('token_type', `${verificationData.token_type || 'bearer'}`)
-    
-    // Store username from verification data if available
-    if (verificationData.username) {
-      localStorage.setItem('username', verificationData.username)
-    }
-    
+    localStorage.setItem('token', `${verificationData.token}` || '')
+    localStorage.setItem('token_type', `${verificationData.token_type || 'Bearer'}`)
+
     ElMessage.success('Face login successful!')
-    
+
     // Close the popup
     faceRecognizerVisible.value = false
-    
+
     // Redirect to the intended page or home page
     const redirectPath = route.query.redirect || '/user'
     router.push(redirectPath)

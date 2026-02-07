@@ -63,15 +63,15 @@ const signupRules = {
   ],
   confirmPassword: [
     { required: true, message: 'Please confirm your password', trigger: 'blur' },
-    { 
+    {
       validator: (rule, value, callback) => {
         if (value !== signupForm.password) {
           callback(new Error('Passwords do not match'))
         } else {
           callback()
         }
-      }, 
-      trigger: 'blur' 
+      },
+      trigger: 'blur'
     }
   ]
 }
@@ -80,7 +80,7 @@ const signupFormRef = ref()
 const signupLoading = ref(false)
 
 const handleSignup = async () => {
-  const valid = await signupFormRef.value.validate().catch(() => {})
+  const valid = await signupFormRef.value.validate().catch(() => { })
   if (!valid) return
 
   signupLoading.value = true
@@ -91,28 +91,31 @@ const handleSignup = async () => {
       full_name: signupForm.full_name,
       password: signupForm.password
     }
-    
+
     // Using the environment variable for API base URL
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/users/`, userData, {
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/signup`, userData, {
       headers: {
         'Content-Type': 'application/json'
       }
     })
-    
-    ElMessage.success('Registration successful! Please login.')
-    // Redirect to login page after successful registration
-    router.push('/login')
+
+    if (response.data.code === 200) {
+      ElMessage.success('Registration successful! Please login.')
+      // Redirect to login page after successful registration
+      router.push('/login')
+    }
+    else {
+      ElMessage.error(response.data.message)
+    }
   } catch (error) {
-    console.error('Signup error:', error)
+    // console.error('Signup error:', error)
     ElMessage.error(error.response?.data?.message || 'Registration failed')
   } finally {
     signupLoading.value = false
   }
 }
 
-const resetForm = () => {
-  signupFormRef.value.resetFields()
-}
+
 </script>
 
 <style scoped>
@@ -140,14 +143,17 @@ const resetForm = () => {
 
 .el-form-item__label {
   text-align: left;
-  width: 130px; /* 调整标签宽度 */
-  padding-right: 10px; /* 为标签和输入框之间添加一些间距 */
+  width: 130px;
+  /* 调整标签宽度 */
+  padding-right: 10px;
+  /* 为标签和输入框之间添加一些间距 */
 }
 
 .el-form-item__content {
   flex: 1;
   /* 确保输入框可以充分伸展 */
-  min-width: 0; /* 防止内容溢出 */
+  min-width: 0;
+  /* 防止内容溢出 */
 }
 
 .button-group {
@@ -159,7 +165,9 @@ const resetForm = () => {
 }
 
 .button-group .el-button {
-  flex: 0 1 auto; /* 按钮不需要填充全部空间 */
-  min-width: 120px; /* 设置最小宽度 */
+  flex: 0 1 auto;
+  /* 按钮不需要填充全部空间 */
+  min-width: 120px;
+  /* 设置最小宽度 */
 }
 </style>
