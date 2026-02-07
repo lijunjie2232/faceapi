@@ -225,7 +225,7 @@ const formRules = {
     { min: 2, max: 50, message: 'Length should be 2 to 50 characters', trigger: 'blur' }
   ],
   new_password: [
-    { min: 8, message: 'Password should be at least 8 characters', trigger: 'blur' }
+    { min: 6, message: 'Password should be at least 8 characters', trigger: 'blur' }
   ]
 };
 
@@ -317,7 +317,7 @@ const saveProfile = async () => {
       ElMessage.error(response.data.message || 'Failed to update profile');
     }
   } catch (error) {
-    console.error('Error updating profile:', error);
+    // console.error('Error updating profile:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
@@ -434,7 +434,7 @@ const handleFaceCaptured = async (imageData) => {
       ElMessage.error(response.data.message || 'Failed to update face image');
     }
   } catch (error) {
-    console.error('Error updating face image:', error);
+    // console.error('Error updating face image:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
