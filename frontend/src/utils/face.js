@@ -1,7 +1,7 @@
 import { ElMessage } from 'element-plus';
 
 /**
- * Face API 工具类，封装了人脸识别相关功能
+ * 顔認識関連機能をカプセル化したFace APIユーティリティクラス
  */
 export class FaceUtils {
   constructor() {
@@ -11,32 +11,32 @@ export class FaceUtils {
   }
 
   /**
-   * 加载face-api.js库和模型
-   * @param {Function} onProgress - 进度回调函数，接收进度百分比参数
-   * @returns {Promise<boolean>} 是否成功加载
+   * face-api.jsライブラリとモデルを読み込む
+   * @param {Function} onProgress - 進捗コールバック関数、進捗率パーセントを引数に受け取る
+   * @returns {Promise<boolean>} 読み込み成功かどうか
    */
   async loadFaceApi(onProgress = null) {
     try {
       if (this.faceapi) {
-        return true; // 已经加载过了
+        return true; // すでに読み込み済み
       }
 
-      // 动态加载face-api.js
+      // face-api.jsを動的に読み込む
       const faceApiModule = await import('face-api.js');
       this.faceapi = faceApiModule;
 
       if (onProgress) onProgress(25);
 
-      // 尝试从本地路径加载模型
+      // ローカルパスからモデルを読み込む
       await this.loadModelsFromPath(this.MODELS_PATH);
 
       if (onProgress) onProgress(100);
 
       return true;
     } catch (error) {
-      // console.error("Error loading face-api.js or models:", error);
+      // console.error("face-api.jsまたはモデルの読み込みエラー:", error);
 
-      // 如果本地加载失败，尝试从CDN加载
+      // ローカル読み込みに失敗した場合、CDNから読み込む
       try {
         await this.loadModelsFromPath('https://raw.githubusercontent.com/justadudewhochacks/face-api.js/master/weights');
 
@@ -44,37 +44,37 @@ export class FaceUtils {
 
         return true;
       } catch (cdnError) {
-        // console.error("Error loading models from CDN:", cdnError);
-        ElMessage.error("Failed to load face detection models");
+        // console.error("CDNからのモデル読み込みエラー:", cdnError);
+        ElMessage.error("顔検出モデルの読み込みに失敗しました");
         return false;
       }
     }
   }
 
   /**
-   * 从指定路径加载模型
-   * @param {string} path - 模型路径
+   * 指定されたパスからモデルを読み込む
+   * @param {string} path - モデルパス
    */
   async loadModelsFromPath(path) {
     await this.faceapi.nets.tinyFaceDetector.loadFromUri(path);
   }
 
   /**
-   * 获取人脸检测器选项
-   * @returns {*} TinyFaceDetectorOptions实例
+   * 顔検出器のオプションを取得
+   * @returns {*} TinyFaceDetectorOptionsインスタンス
    */
   getFaceDetectorOptions() {
     return new this.faceapi.TinyFaceDetectorOptions();
   }
 
   /**
-   * 执行人脸检测
-   * @param {HTMLVideoElement|HTMLImageElement} input - 输入元素
-   * @returns {Promise<Array>} 检测到的人脸数组
+   * 顔検出を実行
+   * @param {HTMLVideoElement|HTMLImageElement} input - 入力要素
+   * @returns {Promise<Array>} 検出された顔の配列
    */
   async detectFaces(input) {
     if (!this.faceapi) {
-      // console.error("face-api.js not loaded");
+      // console.error("face-api.jsが読み込まれていません");
       return [];
     }
 
@@ -85,90 +85,90 @@ export class FaceUtils {
       );
       return detections;
     } catch (error) {
-      // console.error("Error during face detection:", error);
+      // console.error("顔検出中にエラーが発生しました:", error);
       return [];
     }
   }
 
   /**
-   * 在canvas上绘制检测框
-   * @param {HTMLCanvasElement} canvas - 画布元素
-   * @param {Array} detections - 检测结果
-   * @param {number} scaleX - X轴缩放比例
-   * @param {number} scaleY - Y轴缩放比例
-  //  * @param {boolean} isFlipped - 是否翻转
+   * canvasに検出枠を描画
+   * @param {HTMLCanvasElement} canvas - キャンバス要素
+   * @param {Array} detections - 検出結果
+   * @param {number} scaleX - X軸のスケール係数
+   * @param {number} scaleY - Y軸のスケール係数
+  //  * @param {boolean} isFlipped - 反転するかどうか
    */
   drawDetections(canvas, detections, scaleX = 1, scaleY = 1) {
     if (!canvas || !detections || detections.length === 0) return;
 
     const ctx = canvas.getContext('2d');
 
-    // 清除画布
+    // キャンバスをクリア
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     detections.forEach(detection => {
       const box = detection.box;
 
-      // 缩放坐标
+      // 座標をスケーリング
       let x = box.x * scaleX;
       let y = box.y * scaleY;
       const width = box.width * scaleX;
       const height = box.height * scaleY;
 
-      // 如果翻转，则调整X坐标
+      // 反転する場合はX座標を調整
       // if (isFlipped) {
       //   x = canvas.width - x - width;
       // }
 
-      // 绘制椭圆形检测框
+      // 楕円形の検出枠を描画
       this.drawEllipseWithGradient(ctx, x + width / 2, y + height / 2, width / 2, height / 2);
     });
   }
 
   /**
-   * 绘制带渐变效果的椭圆
-   * @param {CanvasRenderingContext2D} ctx - 画布上下文
-   * @param {number} centerX - 中心X坐标
-   * @param {number} centerY - 中心Y坐标
-   * @param {number} radiusX - X轴半径
-   * @param {number} radiusY - Y轴半径
+   * グラデーション効果付きの楕円を描画
+   * @param {CanvasRenderingContext2D} ctx - キャンバスコンテキスト
+   * @param {number} centerX - 中心X座標
+   * @param {number} centerY - 中心Y座標
+   * @param {number} radiusX - X軸半径
+   * @param {number} radiusY - Y軸半径
    */
   drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
     ctx.save();
 
-    // 绘制绿色边框
+    // 緑色の枠線を描画
     ctx.strokeStyle = '#00ff00';
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    // 添加L形角标以提高可见性
+    // 可視性を向上させるためにL字型の角マーカーを追加
     ctx.beginPath();
 
-    // 左上角
+    // 左上
     ctx.moveTo(centerX - radiusX, centerY - radiusY + 10);
     ctx.lineTo(centerX - radiusX, centerY - radiusY);
     ctx.lineTo(centerX - radiusX + 10, centerY - radiusY);
 
-    // 右上角
+    // 右上
     ctx.moveTo(centerX + radiusX - 10, centerY - radiusY);
     ctx.lineTo(centerX + radiusX, centerY - radiusY);
     ctx.lineTo(centerX + radiusX, centerY - radiusY + 10);
 
-    // 左下角
+    // 左下
     ctx.moveTo(centerX - radiusX, centerY + radiusY - 10);
     ctx.lineTo(centerX - radiusX, centerY + radiusY);
     ctx.lineTo(centerX - radiusX + 10, centerY + radiusY);
 
-    // 右下角
+    // 右下
     ctx.moveTo(centerX + radiusX - 10, centerY + radiusY);
     ctx.lineTo(centerX + radiusX, centerY + radiusY);
     ctx.lineTo(centerX + radiusX, centerY + radiusY - 10);
 
     ctx.stroke();
 
-    // 在中心绘制一个小圆点
+    // 中心に小さな円を描画
     ctx.beginPath();
     ctx.fillStyle = '#00ff00';
     ctx.arc(centerX, centerY, 4, 0, Math.PI * 2);
@@ -178,10 +178,10 @@ export class FaceUtils {
   }
 
   /**
-   * 从视频捕获图像
-   * @param {HTMLVideoElement} video - 视频元素
-   * @param {boolean} flipEnabled - 是否翻转
-   * @returns {string} 图片数据URL
+   * ビデオから画像をキャプチャ
+   * @param {HTMLVideoElement} video - ビデオ要素
+   * @param {boolean} flipEnabled - 反転するかどうか
+   * @returns {string} 画像データURL
    */
   captureImageFromVideo(video, flipEnabled = false) {
     const tempCanvas = document.createElement('canvas');
@@ -200,10 +200,10 @@ export class FaceUtils {
   }
 
   /**
-   * 将图片数据URL转换为Blob
-   * @param {string} imageDataUrl - 图片数据URL
-   * @param {string} filename - 文件名
-   * @returns {FormData} 包含图片的表单数据
+   * 画像データURLをBlobに変換
+   * @param {string} imageDataUrl - 画像データURL
+   * @param {string} filename - ファイル名
+   * @returns {FormData} 画像を含むフォームデータ
    */
   imageToFormData(imageDataUrl, filename = 'image.jpg') {
     const formData = new FormData();
@@ -231,9 +231,9 @@ export class FaceUtils {
   }
 
   /**
-   * 发送验证请求
-   * @param {FormData} formData - 表单数据
-   * @returns {Promise<any>} 验证响应
+   * 検証リクエストを送信
+   * @param {FormData} formData - フォームデータ
+   * @returns {Promise<any>} 検証レスポンス
    */
   async verifyFace(formData) {
     // try {
@@ -249,7 +249,7 @@ export class FaceUtils {
     const data = await response.json();
     return data;
     // } catch (error) {
-    //   console.error('Error during face verification:', error);
+    //   console.error('顔検証中にエラーが発生しました:', error);
     //   throw error;
     // }
   }

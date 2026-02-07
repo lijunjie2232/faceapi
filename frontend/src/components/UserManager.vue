@@ -4,34 +4,34 @@
       <el-col :span="24">
         <div class="table-container">
           <div class="header-actions">
-            <h3 class="section-header">Manage Users</h3>
+            <h3 class="section-header">ユーザー管理</h3>
             <div class="header-buttons">
               <el-button type="primary" @click="openDrawer" :icon="Plus">
-                Add User
+                ユーザーを追加
               </el-button>
               <el-button type="success" @click="refreshUsers" :icon="Refresh" :loading="loading" plain>
-                Refresh
+                更新
               </el-button>
               <el-dropdown v-if="selectedUsers.length > 0" @command="handleBatchAction">
                 <el-button type="warning" :icon="Operation">
-                  Batch Actions <el-icon class="el-icon--right"><arrow-down /></el-icon>
+                  一括操作 <el-icon class="el-icon--right"><arrow-down /></el-icon>
                 </el-button>
                 <template #dropdown>
                   <el-dropdown-menu>
-                    <el-dropdown-item command="activate">Activate Selected</el-dropdown-item>
-                    <el-dropdown-item command="deactivate">Deactivate Selected</el-dropdown-item>
-                    <el-dropdown-item command="reset-password" divided>Reset Password</el-dropdown-item>
-                    <el-dropdown-item command="delete-face">Delete Face Data</el-dropdown-item>
+                    <el-dropdown-item command="activate">選択したユーザーを有効化</el-dropdown-item>
+                    <el-dropdown-item command="deactivate">選択したユーザーを無効化</el-dropdown-item>
+                    <el-dropdown-item command="reset-password" divided>パスワードをリセット</el-dropdown-item>
+                    <el-dropdown-item command="delete-face">顔データを削除</el-dropdown-item>
                   </el-dropdown-menu>
                 </template>
               </el-dropdown>
               <span v-if="selectedUsers.length > 0" class="selection-info">
-                {{ selectedUsers.length }} user(s) selected
+                {{ selectedUsers.length }} 名のユーザーが選択されました
               </span>
             </div>
           </div>
 
-          <!-- Search Filters Section -->
+          <!-- 検索フィルターセクション -->
           <div class="filter-section">
             <el-space wrap :size="10" class="filter-tags">
               <el-tag v-for="tag in filterTags" :key="tag.name" closable :type="getFilterTagType(tag.name)"
@@ -40,7 +40,7 @@
               </el-tag>
 
               <el-button type="info" size="middle" icon="Plus" @click="showFilterDialog = true" round plain>
-                Filte By Column
+                列でフィルター
               </el-button>
             </el-space>
           </div>
@@ -49,30 +49,30 @@
             <el-table :data="users" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
               <el-table-column type="selection" width="55"></el-table-column>
               <el-table-column prop="id" label="ID" width="80"></el-table-column>
-              <el-table-column prop="username" label="Username" width="120"></el-table-column>
-              <el-table-column prop="email" label="Email" min-width="200"></el-table-column>
-              <el-table-column prop="full_name" label="Full Name" width="200"></el-table-column>
-              <el-table-column prop="head_pic" label="Face Data" min-width="100">
+              <el-table-column prop="username" label="ユーザー名" width="120"></el-table-column>
+              <el-table-column prop="email" label="メール" min-width="200"></el-table-column>
+              <el-table-column prop="full_name" label="氏名" width="200"></el-table-column>
+              <el-table-column prop="head_pic" label="顔データ" min-width="100">
                 <template #default="scope">
                   <el-button :type="scope.row.head_pic === '1' ? 'success' : 'danger'" size="small"
                     @click="openFaceDetection(scope.row)" @mouseenter="handleMouseEnter(scope.row.id)"
                     @mouseleave="handleMouseLeave" plain>
                     <span>{{
                       hoveredUserId === scope.row.id
-                        ? (scope.row.head_pic === '1' ? 'Update face' : 'Add face')
-                        : (scope.row.head_pic === '1' ? 'Face Added' : 'No face')
+                        ? (scope.row.head_pic === '1' ? '顔を更新する' : '追加する')
+                        : (scope.row.head_pic === '1' ? '顔が追加済み' : '顔が無し')
                     }}</span>
                   </el-button>
                 </template>
               </el-table-column>
-              <el-table-column prop="is_admin" label="Role" width="100">
+              <el-table-column prop="is_admin" label="役割" width="100">
                 <template #default="scope">
                   <el-tag :type="scope.row.is_admin ? 'danger' : 'info'" size="middle" round>
-                    {{ scope.row.is_admin ? 'Admin' : 'User' }}
+                    {{ scope.row.is_admin ? '管理者' : 'ユーザー' }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="is_active" label="Status" width="80">
+              <el-table-column prop="is_active" label="ステータス" width="100">
                 <template #default="scope">
                   <el-switch v-model="scope.row.is_active" :active-value="true" :inactive-value="false"
                     @change="handleStatusChange(scope.row)" :loading="statusLoading[scope.row.id]">
@@ -89,29 +89,29 @@
                   </el-switch>
                 </template>
               </el-table-column>
-              <el-table-column prop="created_at" label="Created" width="160">
+              <el-table-column prop="created_at" label="作成日" width="160">
                 <template #default="scope">
                   {{ formatDate(scope.row.created_at) }}
                 </template>
               </el-table-column>
-              <el-table-column prop="updated_at" label="Last Updated" width="160">
+              <el-table-column prop="updated_at" label="最終更新" width="160">
                 <template #default="scope">
                   {{ formatDate(scope.row.updated_at) }}
                 </template>
               </el-table-column>
-              <el-table-column label="Actions" min-width="140" fixed="right">
+              <el-table-column label="アクション" min-width="140" fixed="right">
                 <template #default="scope">
                   <el-button size="small" @click="editUser(scope.row)" type="primary">
                     <el-icon>
                       <Edit />
                     </el-icon>
-                    Edit
+                    編集
                   </el-button>
                   <el-button size="small" type="danger" @click="deleteUser(scope.row.id)" plain>
                     <el-icon>
                       <Delete />
                     </el-icon>
-                    Delete
+                    削除
                   </el-button>
                 </template>
               </el-table-column>
@@ -124,7 +124,7 @@
                 style="margin-top: 20px; text-align: right;"></el-pagination>
               <div class="footer-actions">
                 <el-button type="success" @click="refreshUsers" :icon="Refresh" :loading="loading" size="large" plain>
-                  Refresh List
+                  リストを更新
                 </el-button>
               </div>
             </div>
@@ -133,11 +133,11 @@
       </el-col>
     </el-row>
 
-    <!-- Filter Dialog -->
-    <el-dialog v-model="showFilterDialog" title="Add Filter" width="500px" :before-close="closeFilterDialog">
+    <!-- フィルターダイアログ -->
+    <el-dialog v-model="showFilterDialog" title="フィルターを追加" width="500px" :before-close="closeFilterDialog">
       <el-form :model="filterForm" label-width="120px">
-        <el-form-item label="Filter Type">
-          <el-select v-model="filterForm.key" placeholder="Select filter type" @change="onFilterKeyChange"
+        <el-form-item label="フィルタータイプ">
+          <el-select v-model="filterForm.key" placeholder="フィルタータイプを選択" @change="onFilterKeyChange"
             style="width: 100%;">
             <el-option v-for="option in filterOptions" :key="option.value" :label="option.label" :value="option.value">
             </el-option>
@@ -145,58 +145,58 @@
         </el-form-item>
 
         <el-form-item v-if="['username', 'email', 'full_name'].includes(filterForm.key)"
-          :label="filterOptions.find(o => o.value === filterForm.key)?.label || 'Value'">
-          <el-input v-model="filterForm.value" placeholder="Enter value" @keyup.enter="addFilterTag">
+          :label="filterOptions.find(o => o.value === filterForm.key)?.label || '値'">
+          <el-input v-model="filterForm.value" placeholder="値を入力" @keyup.enter="addFilterTag">
           </el-input>
         </el-form-item>
 
         <el-form-item v-else-if="['is_active', 'is_admin', 'set_face'].includes(filterForm.key)"
-          :label="filterOptions.find(o => o.value === filterForm.key)?.label || 'Value'">
-          <el-select v-model="filterForm.value" placeholder="Select value" style="width: 100%;">
-            <el-option label="Yes" :value="true"></el-option>
-            <el-option label="No" :value="false"></el-option>
+          :label="filterOptions.find(o => o.value === filterForm.key)?.label || '値'">
+          <el-select v-model="filterForm.value" placeholder="値を選択" style="width: 100%;">
+            <el-option label="はい" :value="true"></el-option>
+            <el-option label="いいえ" :value="false"></el-option>
           </el-select>
         </el-form-item>
 
-        <el-form-item v-else label="Value">
-          <el-input v-model="filterForm.value" placeholder="Enter value" @keyup.enter="addFilterTag">
+        <el-form-item v-else label="値">
+          <el-input v-model="filterForm.value" placeholder="値を入力" @keyup.enter="addFilterTag">
           </el-input>
         </el-form-item>
       </el-form>
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="closeFilterDialog">Cancel</el-button>
+          <el-button @click="closeFilterDialog">キャンセル</el-button>
           <el-button type="primary" @click="addFilterTag"
             :disabled="!filterForm.key || (filterForm.value !== false && !filterForm.value)">
-            Add Filter
+            フィルターを追加
           </el-button>
         </div>
       </template>
     </el-dialog>
 
-    <!-- 右侧抽屉表单 -->
+    <!-- 右側ドロワーのフォーム -->
     <el-drawer v-model="drawerVisible" :title="formTitle" direction="rtl" size="500px"
       :before-close="handleDrawerClose">
       <div class="drawer-content">
         <el-form :model="userForm" :rules="formRules" ref="userFormRef" label-width="120px">
-          <el-form-item label="Username" prop="username">
-            <el-input v-model="userForm.username" placeholder="Enter username"></el-input>
+          <el-form-item label="ユーザー名" prop="username">
+            <el-input v-model="userForm.username" placeholder="ユーザー名を入力"></el-input>
           </el-form-item>
 
-          <el-form-item label="Email" prop="email">
-            <el-input v-model="userForm.email" placeholder="Enter email address"></el-input>
+          <el-form-item label="メール" prop="email">
+            <el-input v-model="userForm.email" placeholder="メールアドレスを入力"></el-input>
           </el-form-item>
 
-          <el-form-item label="Full Name" prop="full_name">
-            <el-input v-model="userForm.full_name" placeholder="Enter full name"></el-input>
+          <el-form-item label="氏名" prop="full_name">
+            <el-input v-model="userForm.full_name" placeholder="氏名を入力"></el-input>
           </el-form-item>
 
-          <el-form-item label="Role" v-if="userForm.id">
-            <el-switch v-model="userForm.is_admin" active-text="Admin" inactive-text="User" />
+          <el-form-item label="役割" v-if="userForm.id">
+            <el-switch v-model="userForm.is_admin" active-text="管理者" inactive-text="ユーザー" />
           </el-form-item>
 
-          <el-form-item label="Status">
+          <el-form-item label="ステータス">
             <el-switch v-model="userForm.is_active">
               <template #active-action>
                 <el-icon>
@@ -211,36 +211,36 @@
             </el-switch>
           </el-form-item>
 
-          <el-form-item label="Password" :prop="!userForm.id ? 'password' : ''" :required="!userForm.id">
+          <el-form-item label="パスワード" :prop="!userForm.id ? 'password' : ''" :required="!userForm.id">
             <el-input v-model="userForm.password" type="password"
-              :placeholder="userForm.id ? 'Leave blank to keep current password' : 'Enter password'"></el-input>
+              :placeholder="userForm.id ? '空白のままにして現在のパスワードを保持' : 'パスワードを入力'"></el-input>
           </el-form-item>
 
           <div class="form-actions">
             <el-button type="primary" @click="submitForm" :loading="submitting" style="flex: 1;">
-              <span>{{ userForm.id ? 'Update User' : 'Create User' }}</span>
+              <span>{{ userForm.id ? 'ユーザーを更新' : 'ユーザーを作成' }}</span>
             </el-button>
 
             <el-button @click="resetForm" v-if="userForm.id" style="flex: 1; margin-left: 10px;">
-              Cancel
+              キャンセル
             </el-button>
           </div>
         </el-form>
       </div>
     </el-drawer>
 
-    <!-- 密码重置对话框 -->
-    <el-dialog v-model="passwordResetDialogVisible" title="Reset Password" width="400px"
+    <!-- パスワードリセットダイアログ -->
+    <el-dialog v-model="passwordResetDialogVisible" title="パスワードをリセット" width="400px"
       :before-close="handlePasswordResetCancel">
       <el-form :model="{ newPassword, confirmPassword }" :rules="passwordResetRules" ref="passwordResetFormRef"
         label-width="120px">
-        <el-form-item label="New Password" prop="newPassword">
-          <el-input v-model="newPassword" type="password" placeholder="Enter new password" show-password
+        <el-form-item label="新しいパスワード" prop="newPassword">
+          <el-input v-model="newPassword" type="password" placeholder="新しいパスワードを入力" show-password
             @input="validatePasswordMatch"></el-input>
         </el-form-item>
-        <el-form-item label="Confirm Password" prop="confirmPassword" :validate-status="passwordMatchStatus"
+        <el-form-item label="パスワードを確認" prop="confirmPassword" :validate-status="passwordMatchStatus"
           :help="passwordMatchMessage">
-          <el-input v-model="confirmPassword" type="password" placeholder="Confirm new password" show-password
+          <el-input v-model="confirmPassword" type="password" placeholder="新しいパスワードを確認" show-password
             @input="validatePasswordMatch">
             <template #suffix>
               <el-icon v-if="passwordMatchStatus === 'success'" class="password-match-icon success">
@@ -256,15 +256,15 @@
 
       <template #footer>
         <div class="dialog-footer">
-          <el-button @click="handlePasswordResetCancel">Cancel</el-button>
+          <el-button @click="handlePasswordResetCancel">キャンセル</el-button>
           <el-button type="primary" @click="confirmPasswordReset" :loading="submitting" :disabled="!isPasswordValid">
-            Reset Password
+            パスワードをリセット
           </el-button>
         </div>
       </template>
     </el-dialog>
 
-    <!-- Face Detection Pop-out Window -->
+    <!-- 顔検出ポップアウトウィンドウ -->
     <FaceDetectionPopOut v-model="showFaceDetectionPopOut" :_handler="updateUserFace" />
   </div>
 </template>
@@ -283,23 +283,23 @@ const loading = ref(false)
 const submitting = ref(false)
 const userFormRef = ref()
 const drawerVisible = ref(false)
-const showFaceDetectionPopOut = ref(false)  // Changed from faceDetectionVisible
+const showFaceDetectionPopOut = ref(false)  // faceDetectionVisibleから変更
 // const currentUserToken = ref('')
 const selectedUserForFace = ref(null)
-// const currentUserRole = ref(false) // 当前用户是否为管理员
-// 添加hover状态管理
+// const currentUserRole = ref(false) // 現在のユーザーが管理者かどうか
+// hover状態管理を追加
 const hoveredUserId = ref(null)
-// 添加状态更新loading状态
+// 状態更新のloading状態を追加
 const statusLoading = ref({})
-// 添加多选状态管理
+// 多選択状態管理を追加
 const selectedUsers = ref([])
-// 添加密码重置相关状态
+// パスワードリセット関連の状態を追加
 const passwordResetDialogVisible = ref(false)
 const newPassword = ref('')
 const confirmPassword = ref('')
 const passwordResetFormRef = ref()
 
-// 添加搜索过滤相关状态
+// 検索フィルター関連の状態を追加
 const filterTags = ref([])
 const showFilterDialog = ref(false)
 const filterForm = reactive({
@@ -307,7 +307,7 @@ const filterForm = reactive({
   value: ''
 })
 
-// 添加密码确认验证状态
+// パスワード確認検証状態を追加
 const passwordMatchStatus = ref('')
 const passwordMatchMessage = ref('')
 
@@ -328,27 +328,27 @@ const pagination = reactive({
 })
 
 const filterOptions = [
-  { value: 'username', label: 'Username' },
-  { value: 'email', label: 'Email' },
-  { value: 'full_name', label: 'Full Name' },
-  { value: 'is_active', label: 'Active Status' },
-  { value: 'is_admin', label: 'Admin Role' },
-  { value: 'set_face', label: 'Has Face Data' }
+  { value: 'username', label: 'ユーザー名' },
+  { value: 'email', label: 'メール' },
+  { value: 'full_name', label: '氏名' },
+  { value: 'is_active', label: 'アクティブ状態' },
+  { value: 'is_admin', label: '管理者役割' },
+  { value: 'set_face', label: '顔データあり' }
 ]
 
 const formRules = computed(() => {
   return {
     username: [
-      { required: true, message: 'Please enter a username', trigger: 'blur' },
-      { min: 3, max: 30, message: 'Length should be 3 to 30 characters', trigger: 'blur' }
+      { required: true, message: 'ユーザー名を入力してください', trigger: 'blur' },
+      { min: 3, max: 30, message: '長さは3〜30文字である必要があります', trigger: 'blur' }
     ],
     email: [
-      { required: true, message: 'Please enter an email address', trigger: 'blur' },
-      { type: 'email', message: 'Please enter a valid email address', trigger: 'blur' }
+      { required: true, message: 'メールアドレスを入力してください', trigger: 'blur' },
+      { type: 'email', message: '有効なメールアドレスを入力してください', trigger: 'blur' }
     ],
     password: [
-      { required: !userForm.id, message: 'Please enter a password', trigger: 'blur' },
-      { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
+      { required: !userForm.id, message: 'パスワードを入力してください', trigger: 'blur' },
+      { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
     ]
   }
 })
@@ -356,21 +356,21 @@ const formRules = computed(() => {
 const passwordResetRules = computed(() => {
   return {
     newPassword: [
-      { required: true, message: 'Please enter a new password', trigger: 'blur' },
-      { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
+      { required: true, message: '新しいパスワードを入力してください', trigger: 'blur' },
+      { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
     ],
     confirmPassword: [
-      { required: true, message: 'Please confirm the password', trigger: 'blur' },
-      { min: 6, message: 'Password should be at least 6 characters', trigger: 'blur' }
+      { required: true, message: 'パスワードを確認してください', trigger: 'blur' },
+      { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
     ]
   }
 })
 
 const formTitle = computed(() => {
-  return userForm.id ? 'Edit User' : 'Create New User'
+  return userForm.id ? 'ユーザーを編集' : '新しいユーザーを作成'
 })
 
-// // 判断当前用户是否可以修改角色（只有管理员可以修改角色）
+// // 現在のユーザーが役割を変更できるかどうかを判断（管理者のみが役割を変更可能）
 // const canModifyRole = computed(() => {
 //   return currentUserRole.value === true
 // })
@@ -390,13 +390,13 @@ const fetchUsers = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 构建查询参数
+    // クエリパラメータを構築
     const params = {
       skip: (pagination.page - 1) * pagination.size,
       limit: pagination.size
     }
 
-    // 添加过滤参数
+    // フィルターパラメータを追加
     filterTags.value.forEach(tag => {
       params[tag.name] = tag.value
     })
@@ -412,10 +412,10 @@ const fetchUsers = async () => {
       users.value = response.data.data
       pagination.total = response.data.total || users.value.length
     } else {
-      ElMessage.error(response.data.message || 'Failed to fetch users')
+      ElMessage.error(response.data.message || 'ユーザーの取得に失敗しました')
     }
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'An error occurred while fetching users')
+    ElMessage.error(error.response?.data?.detail || 'ユーザーの取得中にエラーが発生しました')
   } finally {
     loading.value = false
   }
@@ -440,7 +440,7 @@ const openDrawer = () => {
 const editUser = (user) => {
   Object.assign(userForm, {
     ...user,
-    password: '' // 编辑时不显示原密码
+    password: '' // 編集時は元のパスワードを表示しない
   })
   drawerVisible.value = true
 }
@@ -486,14 +486,14 @@ const submitForm = async () => {
 
 
     if (userForm.id) {
-      // Update existing user
+      // 既存のユーザーを更新
       response = await axios.put(
         `${API_BASE_URL}/api/v1/admin/users/${userForm.id}`,
         userData,
         { headers }
       )
     } else {
-      // Create new user
+      // 新しいユーザーを作成
       response = await axios.post(
         `${API_BASE_URL}/api/v1/admin/users/`,
         {
@@ -506,18 +506,18 @@ const submitForm = async () => {
 
     if (response.data.success) {
       ElMessage.success(
-        userForm.id ? 'User updated successfully' : 'User created successfully'
+        userForm.id ? 'ユーザーが正常に更新されました' : 'ユーザーが正常に作成されました'
       )
       drawerVisible.value = false
       resetForm()
       fetchUsers()
     } else {
-      ElMessage.error(response.data.message || 'Operation failed')
+      ElMessage.error(response.data.message || '操作に失敗しました')
     }
   } catch (error) {
     ElMessage.error(
       error.response?.data?.detail ||
-      (userForm.id ? 'Failed to update user' : 'Failed to create user')
+      (userForm.id ? 'ユーザーの更新に失敗しました' : 'ユーザーの作成に失敗しました')
     )
   } finally {
     submitting.value = false
@@ -526,10 +526,10 @@ const submitForm = async () => {
 
 const openFaceDetection = (user) => {
   selectedUserForFace.value = user
-  showFaceDetectionPopOut.value = true  // Changed from faceDetectionVisible.value = true
+  showFaceDetectionPopOut.value = true  // faceDetectionVisible.value = trueから変更
 }
 
-// 添加鼠标事件处理方法
+// マウスイベント処理メソッドを追加
 const handleMouseEnter = (userId) => {
   hoveredUserId.value = userId
 }
@@ -539,20 +539,20 @@ const handleMouseLeave = () => {
 }
 
 
-// Function to update a user's face as an admin
+// 管理者としてユーザーの顔を更新する関数
 const updateUserFace = async (imageData) => {
   try {
-    // Create FormData to send image as form data
+    // 画像をフォームデータとして送信するためにFormDataを作成
     const formData = new FormData();
 
-    // get userId
+    // userIdを取得
     const userId = selectedUserForFace.value.id;
 
-    // get token
+    // トークンを取得
     const token = localStorage.getItem('token') || '';
 
-    // Convert base64 image data to blob and append to form data
-    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+    // base64画像データをblobに変換してフォームデータに追加
+    const byteCharacters = atob(imageData.split(',')[1]); // data:image/jpeg;base64,プレフィックスを削除
     const byteArrays = [];
 
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
@@ -570,7 +570,7 @@ const updateUserFace = async (imageData) => {
     const blob = new Blob(byteArrays, { type: 'image/jpeg' });
     formData.append('image', blob, 'face_image.jpg');
 
-    // Upload the captured image to update the specified user's face
+    // キャプチャされた画像をアップロードして指定されたユーザーの顔を更新
     const response = await axios.put(
       `${API_BASE_URL}/api/v1/admin/face/${userId}`,
       formData,
@@ -582,32 +582,32 @@ const updateUserFace = async (imageData) => {
       }
     );
 
-    // Check if response has the expected structure with 'code' field
+    // 'code'フィールドを持つ期待される構造のレスポンスを確認
     if (response.data.code === 200 || response.data.success) {
-      ElMessage.success(response.data.message || 'Face image updated successfully');
+      ElMessage.success(response.data.message || '顔画像が正常に更新されました');
 
-      // Update user list to reflect the new face data
+      // 新しい顔データを反映するためにユーザーリストを更新
       const userIndex = users.value.findIndex(u => u.id === userId);
       if (userIndex !== -1) {
-        users.value[userIndex].head_pic = '1'; // Mark as having face data
+        users.value[userIndex].head_pic = '1'; // 顔データがあることをマーク
       }
     } else {
-      ElMessage.error(response.data.message || 'Failed to update face image');
+      ElMessage.error(response.data.message || '顔画像の更新に失敗しました');
     }
 
     // return response.data;
   } catch (error) {
-    // console.error('Error updating user face image:', error);
+    // console.error('ユーザー顔画像の更新中にエラーが発生しました:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
-      ElMessage.error(error.message || 'An error occurred while updating face image');
+      ElMessage.error(error.message || '顔画像の更新中にエラーが発生しました');
     }
     throw error;
   }
   finally {
 
-    // refresh user list
+    // ユーザーリストを更新
     fetchUsers();
   }
 }
@@ -628,16 +628,16 @@ const handleStatusChange = async (user) => {
     )
 
     if (response.data.success) {
-      ElMessage.success(`User ${user.is_active ? 'activated' : 'deactivated'} successfully`)
+      ElMessage.success(`ユーザーが正常に${user.is_active ? '有効化' : '無効化'}されました`)
     } else {
-      // Revert the change if API call fails
+      // API呼び出しが失敗した場合は変更を元に戻す
       user.is_active = !user.is_active
-      ElMessage.error(response.data.message || 'Failed to update user status')
+      ElMessage.error(response.data.message || 'ユーザー状態の更新に失敗しました')
     }
   } catch (error) {
-    // Revert the change if API call fails
+    // API呼び出しが失敗した場合は変更を元に戻す
     user.is_active = !user.is_active
-    ElMessage.error(error.response?.data?.detail || 'Failed to update user status')
+    ElMessage.error(error.response?.data?.detail || 'ユーザー状態の更新に失敗しました')
   } finally {
     statusLoading.value[user.id] = false
   }
@@ -646,11 +646,11 @@ const handleStatusChange = async (user) => {
 const deleteUser = async (userId) => {
   try {
     await ElMessageBox.confirm(
-      'Are you sure you want to delete this user? This action cannot be undone.',
-      'Warning',
+      '本当にこのユーザーを削除してもよろしいですか？この操作は元に戻せません。',
+      '警告',
       {
-        confirmButtonText: 'Delete',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: '削除',
+        cancelButtonText: 'キャンセル',
         type: 'warning'
       }
     )
@@ -659,10 +659,10 @@ const deleteUser = async (userId) => {
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
     await axios.delete(`${API_BASE_URL}/api/v1/users/${userId}`, { headers })
-    ElMessage.success('User deleted successfully')
+    ElMessage.success('ユーザーが正常に削除されました')
     fetchUsers()
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'Failed to delete user')
+    ElMessage.error(error.response?.data?.detail || 'ユーザーの削除に失敗しました')
   }
 }
 
@@ -670,9 +670,9 @@ const refreshUsers = async () => {
   loading.value = true
   try {
     await fetchUsers()
-    ElMessage.success('User list refreshed successfully')
+    ElMessage.success('ユーザーリストが正常に更新されました')
   } catch (error) {
-    ElMessage.error('Failed to refresh user list')
+    ElMessage.error('ユーザーリストの更新に失敗しました')
   } finally {
     loading.value = false
   }
@@ -684,7 +684,7 @@ const handleSelectionChange = (selection) => {
 
 const handleBatchAction = async (command) => {
   if (selectedUsers.value.length === 0) {
-    ElMessage.warning('Please select at least one user')
+    ElMessage.warning('少なくとも1名のユーザーを選択してください')
     return
   }
 
@@ -704,18 +704,18 @@ const handleBatchAction = async (command) => {
         break
     }
   } catch (error) {
-    // console.error('Batch operation failed:', error)
+    // console.error('一括操作に失敗しました:', error)
   }
 }
 
 const batchUpdateStatus = async (isActive) => {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to ${isActive ? 'activate' : 'deactivate'} ${selectedUsers.value.length} user(s)?`,
-      'Confirm Batch Action',
+      `${selectedUsers.value.length} 名のユーザーを${isActive ? '有効化' : '無効化'}してもよろしいですか？`,
+      '一括操作の確認',
       {
-        confirmButtonText: 'Confirm',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: '確認',
+        cancelButtonText: 'キャンセル',
         type: 'warning'
       }
     )
@@ -723,7 +723,7 @@ const batchUpdateStatus = async (isActive) => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 使用新的批量操作API端点
+    // 新しい一括操作APIエンドポイントを使用
     const response = await axios.post(
       `${API_BASE_URL}/api/v1/admin/batch/${isActive ? 'active' : 'inactive'}`,
       {
@@ -734,9 +734,9 @@ const batchUpdateStatus = async (isActive) => {
 
     if (response.data.success) {
       const result = response.data.data
-      ElMessage.success(`Successfully ${isActive ? 'activated' : 'deactivated'} ${result.success_count} of ${result.total_count} user(s)`)
+      ElMessage.success(`${result.total_count} 名中 ${result.success_count} 名のユーザーが正常に${isActive ? '有効化' : '無効化'}されました`)
 
-      // 更新本地用户状态
+      // ローカルのユーザー状態を更新
       selectedUsers.value.forEach(user => {
         const userIndex = users.value.findIndex(u => u.id === user.id)
         if (userIndex !== -1) {
@@ -744,15 +744,15 @@ const batchUpdateStatus = async (isActive) => {
         }
       })
     } else {
-      ElMessage.error(response.data.message || 'Batch operation failed')
+      ElMessage.error(response.data.message || '一括操作に失敗しました')
     }
 
-    // 清除选择并刷新列表
+    // 選択をクリアしてリストを更新
     selectedUsers.value = []
     fetchUsers()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.detail || 'Batch operation failed')
+      ElMessage.error(error.response?.data?.detail || '一括操作に失敗しました')
     }
   }
 }
@@ -760,16 +760,16 @@ const batchUpdateStatus = async (isActive) => {
 const batchResetPassword = async () => {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to reset passwords for ${selectedUsers.value.length} user(s)?`,
-      'Confirm Password Reset',
+      `${selectedUsers.value.length} 名のユーザーのパスワードをリセットしてもよろしいですか？`,
+      'パスワードリセットの確認',
       {
-        confirmButtonText: 'Continue',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: '続行',
+        cancelButtonText: 'キャンセル',
         type: 'warning'
       }
     )
 
-    // Show password input dialog
+    // パスワード入力ダイアログを表示
     newPassword.value = ''
     confirmPassword.value = ''
     passwordMatchStatus.value = ''
@@ -777,7 +777,7 @@ const batchResetPassword = async () => {
     passwordResetDialogVisible.value = true
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error('Password reset cancelled')
+      ElMessage.error('パスワードリセットがキャンセルされました')
     }
   }
 }
@@ -795,7 +795,7 @@ const confirmPasswordReset = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 使用新的批量重置密码API端点
+    // 新しい一括パスワードリセットAPIエンドポイントを使用
     const response = await axios.post(
       `${API_BASE_URL}/api/v1/admin/batch/reset-password`,
       {
@@ -807,25 +807,25 @@ const confirmPasswordReset = async () => {
 
     if (response.data.success) {
       const result = response.data.data
-      ElMessage.success(`Successfully reset passwords for ${result.success_count} of ${result.total_count} user(s)`)
+      ElMessage.success(`${result.total_count} 名中 ${result.success_count} 名のユーザーのパスワードが正常にリセットされました`)
     } else {
-      ElMessage.error(response.data.message || 'Password reset failed')
+      ElMessage.error(response.data.message || 'パスワードリセットに失敗しました')
     }
 
-    // 关闭对话框并清除选择
+    // ダイアログを閉じて選択をクリア
     passwordResetDialogVisible.value = false
     newPassword.value = ''
     confirmPassword.value = ''
     selectedUsers.value = []
     fetchUsers()
   } catch (error) {
-    ElMessage.error(error.response?.data?.detail || 'Password reset failed')
+    ElMessage.error(error.response?.data?.detail || 'パスワードリセットに失敗しました')
   } finally {
     submitting.value = false
   }
 }
 
-// 密码匹配验证方法
+// パスワード一致検証メソッド
 const validatePasswordMatch = () => {
   if (!confirmPassword.value) {
     passwordMatchStatus.value = ''
@@ -835,14 +835,14 @@ const validatePasswordMatch = () => {
 
   if (newPassword.value !== confirmPassword.value) {
     passwordMatchStatus.value = 'error'
-    passwordMatchMessage.value = 'Passwords do not match'
+    passwordMatchMessage.value = 'パスワードが一致しません'
   } else {
     passwordMatchStatus.value = 'success'
-    passwordMatchMessage.value = 'Passwords match'
+    passwordMatchMessage.value = 'パスワードが一致します'
   }
 }
 
-// 计算密码是否有效（用于禁用提交按钮）
+// パスワードが有効かどうかを計算（送信ボタンを無効化するために使用）
 const isPasswordValid = computed(() => {
   return newPassword.value.length >= 6 &&
     confirmPassword.value.length >= 6 &&
@@ -861,11 +861,11 @@ const handlePasswordResetCancel = () => {
 const batchDeleteFace = async () => {
   try {
     await ElMessageBox.confirm(
-      `Are you sure you want to delete face data for ${selectedUsers.value.length} user(s)? This action cannot be undone.`,
-      'Confirm Face Data Deletion',
+      `${selectedUsers.value.length} 名のユーザーの顔データを削除してもよろしいですか？この操作は元に戻せません。`,
+      '顔データ削除の確認',
       {
-        confirmButtonText: 'Delete Face Data',
-        cancelButtonText: 'Cancel',
+        confirmButtonText: '顔データを削除',
+        cancelButtonText: 'キャンセル',
         type: 'error'
       }
     )
@@ -873,7 +873,7 @@ const batchDeleteFace = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
-    // 使用新的批量重置面部数据API端点
+    // 新しい一括顔データリセットAPIエンドポイントを使用
     const response = await axios.post(
       `${API_BASE_URL}/api/v1/admin/batch/reset-face`,
       {
@@ -884,30 +884,30 @@ const batchDeleteFace = async () => {
 
     if (response.data.success) {
       const result = response.data.data
-      ElMessage.success(`Successfully deleted face data for ${result.success_count} of ${result.total_count} user(s)`)
+      ElMessage.success(`${result.total_count} 名中 ${result.success_count} 名のユーザーの顔データが正常に削除されました`)
 
-      // 更新用户列表中的人脸状态
+      // ユーザーリスト中の顔状態を更新
       selectedUsers.value.forEach(user => {
         const userIndex = users.value.findIndex(u => u.id === user.id)
         if (userIndex !== -1) {
-          users.value[userIndex].head_pic = '0' // 标记为人脸数据已删除
+          users.value[userIndex].head_pic = '0' // 顔データが削除されたことをマーク
         }
       })
     } else {
-      ElMessage.error(response.data.message || 'Face data deletion failed')
+      ElMessage.error(response.data.message || '顔データの削除に失敗しました')
     }
 
-    // 清除选择并刷新列表
+    // 選択をクリアしてリストを更新
     selectedUsers.value = []
     fetchUsers()
   } catch (error) {
     if (error !== 'cancel') {
-      ElMessage.error(error.response?.data?.detail || 'Face data deletion failed')
+      ElMessage.error(error.response?.data?.detail || '顔データの削除に失敗しました')
     }
   }
 }
 
-// 新增过滤标签相关方法
+// 新しいフィルタータグ関連メソッド
 const onFilterKeyChange = () => {
   filterForm.value = ''
 }
@@ -915,14 +915,14 @@ const onFilterKeyChange = () => {
 const addFilterTag = () => {
   if (!filterForm.key || (filterForm.value !== false && !filterForm.value)) return
 
-  // 获取标签显示名称
+  // タグラベル表示名を取得
   const option = filterOptions.find(opt => opt.value === filterForm.key)
   const label = option ? option.label : filterForm.key
 
-  // 检查是否已经存在相同的过滤条件，如果存在则替换
+  // 同じフィルター条件が既に存在するかどうかを確認、存在する場合は置換
   const existingIndex = filterTags.value.findIndex(tag => tag.name === filterForm.key)
   if (existingIndex !== -1) {
-    // 替换现有的过滤条件
+    // 既存のフィルター条件を置換
     filterTags.value[existingIndex] = {
       name: filterForm.key,
       value: filterForm.value,
@@ -930,7 +930,7 @@ const addFilterTag = () => {
       type: getFilterTagType(filterForm.key)
     }
   } else {
-    // 添加新标签
+    // 新しいタグを追加
     filterTags.value.push({
       name: filterForm.key,
       value: filterForm.value,
@@ -939,14 +939,14 @@ const addFilterTag = () => {
     })
   }
 
-  // 重置选择器
+  // セレクターをリセット
   filterForm.key = ''
   filterForm.value = ''
 
-  // 关闭对话框
+  // ダイアログを閉じる
   showFilterDialog.value = false
 
-  // 重新获取用户列表
+  // ユーザーリストを再取得
   pagination.page = 1
   fetchUsers()
 }
@@ -959,14 +959,14 @@ const removeFilterTag = (tagName) => {
   }
 }
 
-// 新增方法：打开过滤器对话框
+// 新しいメソッド：フィルターダイアログを開く
 const closeFilterDialog = () => {
   showFilterDialog.value = false
   filterForm.key = ''
   filterForm.value = ''
 }
 
-// 添加计算属性来获取不同过滤类型的标签颜色
+// 異なるフィルタータイプのタグ色を取得する計算プロパティを追加
 const getFilterTagType = (filterName) => {
   switch (filterName) {
     case 'username':
@@ -1073,7 +1073,7 @@ const getFilterTagType = (filterName) => {
   border-radius: 4px;
 }
 
-/* Responsive adjustments for header actions */
+/* ヘッダーアクションのレスポンシブ調整 */
 @media (max-width: 768px) {
   .header-actions {
     flex-direction: column;
@@ -1092,7 +1092,7 @@ const getFilterTagType = (filterName) => {
   }
 }
 
-/* Responsive adjustments */
+/* レスポンシブ調整 */
 @media (max-width: 768px) {
   .header-actions {
     flex-direction: column;
@@ -1113,7 +1113,7 @@ const getFilterTagType = (filterName) => {
   }
 }
 
-/* 抽屉样式优化 */
+/* ドロワーのスタイル最適化 */
 :deep(.el-drawer__header) {
   margin-bottom: 20px;
   padding-bottom: 15px;
@@ -1132,19 +1132,19 @@ const getFilterTagType = (filterName) => {
   height: 40px;
 }
 
-/* 头像样式优化 */
+/* アバターのスタイル最適化 */
 :deep(.el-avatar) {
   background-color: #409eff;
   color: white;
   font-weight: 500;
 }
 
-/* 人脸按钮样式优化 */
+/* 顔ボタンのスタイル最適化 */
 :deep(.el-button .el-icon) {
   margin-right: 5px;
 }
 
-/* 对话框底部样式 */
+/* ダイアログのフッタースタイル */
 :deep(.el-dialog__footer) {
   text-align: right;
 }

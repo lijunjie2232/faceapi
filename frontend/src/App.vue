@@ -44,7 +44,7 @@
       </el-footer>
     </el-container>
 
-    <!-- 路由出口，用于显示登录和注册页面 -->
+    <!-- ルート出口、ログインおよび登録ページの表示用 -->
     <router-view v-if="!showMainApp" />
   </div>
 </template>
@@ -66,48 +66,48 @@ const userInfo = ref({});
 const loading = ref(true);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
 
-// Provide userInfo to child components
+// 子コンポーネントにuserInfoを提供
 provide('userInfo', userInfo);
 
-// Fetch user info from API
+// APIからユーザー情報を取得
 const fetchUserInfo = async () => {
   try {
     loading.value = true;
 
-    // Get token from local storage
+    // ローカルストレージからトークンを取得
     const token = localStorage.getItem('token');
 
-    // Make API request with authorization header
+    // 認証ヘッダー付きでAPIリクエストを行う
     const response = await axios.get(`${API_BASE_URL}/api/v1/user/me`, {
       headers: {
-        'Authorization': `Bearer ${token}`  // Using Bearer token format
+        'Authorization': `Bearer ${token}`  // Bearerトークン形式を使用
       }
     });
 
     if (response.data.code === 200) {
       userInfo.value = response.data.data;
       localStorage.setItem('username', userInfo.value.username);
-      localStorage.setItem('userInfo', JSON.stringify(response.data.data)); // Store full user info
+      localStorage.setItem('userInfo', JSON.stringify(response.data.data)); // 完全なユーザー情報を保存
       username.value = userInfo.value.username;
     } else if (response.data.detail === "Not authenticated") {
-      // Token is invalid, need to login again
-      // console.error('Token is invalid, redirecting to login');
-      // Clear local storage
-      localStorage.removeItem('token'); // Also remove the token
-      localStorage.removeItem('username'); // Also remove the username
-      localStorage.removeItem('userInfo'); // Remove user info
+      // トークンが無効、再度ログインが必要
+      // console.error('トークンが無効です、ログインページにリダイレクトします');
+      // ローカルストレージをクリア
+      localStorage.removeItem('token'); // トークンも削除
+      localStorage.removeItem('username'); // ユーザー名も削除
+      localStorage.removeItem('userInfo'); // ユーザー情報も削除
     } else {
-      // console.error('Failed to fetch user info:', response.data.message);
+      // console.error('ユーザー情報の取得に失敗しました:', response.data.message);
     }
   } catch (error) {
     if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
-      // Token is invalid, need to login again
-      // console.error('Token is invalid, redirecting to login');
-      // Clear local storage
-      localStorage.removeItem('token'); // Also remove the token
-      localStorage.removeItem('uesrname'); // Also remove the username
+      // トークンが無効、再度ログインが必要
+      // console.error('トークンが無効です、ログインページにリダイレクトします');
+      // ローカルストレージをクリア
+      localStorage.removeItem('token'); // トークンも削除
+      localStorage.removeItem('uesrname'); // ユーザー名も削除
     } else {
-      // console.error('Error fetching user info:', error);
+      // console.error('ユーザー情報の取得中にエラーが発生しました:', error);
     }
   } finally {
     loading.value = false;
@@ -116,52 +116,52 @@ const fetchUserInfo = async () => {
 
 const checkLoginStatus = async () => {
   try {
-    // Check for user token in localStorage instead of userInfo
+    // userInfoの代わりにlocalStorageからユーザートークンを確認
     const token = localStorage.getItem('token');
     if (token) {
       await fetchUserInfo();
-      // Verify token exists and extract username from it if needed
-      // In a real implementation, you might decode JWT to get user info
-      // For now, we'll store username separately or fetch from API
+      // トークンが存在することを確認し、必要に応じてそこからユーザー名を抽出
+      // 実際の実装では、JWTをデコードしてユーザー情報を取得する場合があります
+      // 今のところ、ユーザー名を別途保存するかAPIから取得します
       showMainApp.value = true;
-      // console.log('User is authenticated');
+      // console.log('ユーザーは認証されています');
 
-      // If currently on login/signup page but authenticated, redirect based on route
+      // 現在ログイン/サインアップページにいるが認証されている場合、ルートに基づいてリダイレクト
       if (route.path === '/login' || route.path === '/signup') {
-        // If coming from login page, navigate to default page (user)
+        // ログインページから来た場合は、デフォルトページ（ユーザー）に移動
         router.push('/user');
       }
     } else {
       showMainApp.value = false;
-      // If not logged in and not on login/signup page, redirect to login
+      // ログインしていないかつログイン/サインアップページにいない場合は、ログインにリダイレクト
       if (route.path !== '/login' && route.path !== '/signup' && route.path !== '/') {
         router.push('/login');
       }
     }
   } catch (error) {
-    // console.error('Checking login status failed:', error);
+    // console.error('ログイン状態の確認に失敗しました:', error);
     showMainApp.value = false;
     router.push('/login');
   }
 };
 
-// Provide checkLoginStatus function to child components
+// 子コンポーネントにcheckLoginStatus関数を提供
 provide('checkLoginStatus', checkLoginStatus);
 
 const logout = async () => {
   try {
-    // Clear token and user information from localStorage
+    // ローカルストレージからトークンとユーザー情報をクリア
     localStorage.removeItem('token');
     localStorage.removeItem('username');
-    localStorage.removeItem('userInfo'); // Also remove user info
+    localStorage.removeItem('userInfo'); // ユーザー情報も削除
     username.value = '';
     userInfo.value = {};
     showMainApp.value = false;
     await router.push('/login');
-    ElMessage.success('Logged out successfully');
+    ElMessage.success('正常にログアウトしました');
   } catch (error) {
-    // console.error('Logout failed:', error);
-    ElMessage.error('Logout failed');
+    // console.error('ログアウトに失敗しました:', error);
+    ElMessage.error('ログアウトに失敗しました');
   }
 };
 
@@ -177,7 +177,7 @@ onMounted(() => {
   checkLoginStatus();
 });
 
-// Listen for route changes
+// ルート変更を監視
 router.afterEach(() => {
   checkLoginStatus();
 });
@@ -185,6 +185,7 @@ router.afterEach(() => {
 </script>
 
 <style>
+
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -275,7 +276,7 @@ router.afterEach(() => {
   color: #aeb7c2;
 }
 
-/* 为其他页面保留通用样式 */
+/* 他のページ用の汎用スタイルを保持 */
 .admin-panel {
   min-height: calc(100vh - 80px - 65px);
 }

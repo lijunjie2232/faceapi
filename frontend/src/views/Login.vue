@@ -1,26 +1,26 @@
 <template>
   <div class="login-container">
     <el-card class="login-card">
-      <h2>Login</h2>
+      <h2>ログイン</h2>
       <el-form :model="loginForm" :rules="loginRules" ref="loginFormRef" label-width="100px" class="login-form">
-        <el-form-item label="Username" prop="username">
-          <el-input v-model="loginForm.username" placeholder="Enter your username"></el-input>
+        <el-form-item label="ユーザー名" prop="username">
+          <el-input v-model="loginForm.username" placeholder="ユーザー名を入力してください"></el-input>
         </el-form-item>
-        <el-form-item label="Password" prop="password">
-          <el-input v-model="loginForm.password" type="password" placeholder="Enter your password"></el-input>
+        <el-form-item label="パスワード" prop="password">
+          <el-input v-model="loginForm.password" type="password" placeholder="パスワードを入力してください"></el-input>
         </el-form-item>
         <el-form-item>
           <div class="button-group">
-            <el-button type="primary" @click="handleLogin" :loading="loginLoading">Login</el-button>
-            <el-button @click="resetForm">Reset</el-button>
-            <el-button @click="openFaceRecognizer">Login with Face</el-button>
+            <el-button type="primary" @click="handleLogin" :loading="loginLoading">ログイン</el-button>
+            <!-- <el-button @click="resetForm">リセット</el-button> -->
+            <el-button @click="openFaceRecognizer">顔でログイン</el-button>
           </div>
         </el-form-item>
       </el-form>
-      <p>Don't have an account? <router-link to="/signup">Sign Up</router-link></p>
+      <p>アカウントをお持ちでないですか？ <router-link to="/signup">サインアップ</router-link></p>
     </el-card>
 
-    <!-- Face Recognizer Pop Out Component -->
+    <!-- 顔認識ポップアウトコンポーネント -->
     <FaceRecongnizerPopOut v-model="faceRecognizerVisible" @face-verified="handleFaceVerification" />
   </div>
 </template>
@@ -40,16 +40,16 @@ const loginForm = reactive({
   password: ''
 })
 
-// State for face recognizer popup
+// 顔認識ポップアップの状態
 const faceRecognizerVisible = ref(false)
 
 const loginRules = {
   username: [
-    { required: true, message: 'Please enter your username', trigger: 'blur' }
+    { required: true, message: 'ユーザー名を入力してください', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: 'Please enter your password', trigger: 'blur' },
-    { min: 6, message: 'Password length should be at least 6 characters', trigger: 'blur' }
+    { required: true, message: 'パスワードを入力してください', trigger: 'blur' },
+    { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
   ]
 }
 
@@ -66,64 +66,64 @@ const handleLogin = async () => {
     formData.append('username', loginForm.username)
     formData.append('password', loginForm.password)
 
-    // Using the environment variable for API base URL
+    // APIベースURLの環境変数を使用
     const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/login`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
     })
 
-    // Handle the response according to the actual format
+    // 実際のフォーマットに応じてレスポンスを処理
     if (response.code !== 200) {
       const { token, token_type } = response.data.data
 
-      // Store the access token in localStorage with the correct key
+      // アクセストークンを正しいキーでlocalStorageに保存
       localStorage.setItem('token', `${token}`)
       localStorage.setItem('token_type', `${token_type}`)
 
-      ElMessage.success('Login successful!')
+      ElMessage.success('ログイン成功！')
 
-      // 获取路由参数中的重定向路径，如果有的话
+      // ルートパラメータからリダイレクトパスを取得（ある場合）
       const redirectPath = route.query.redirect || '/user'
-      // Redirect to the intended page or home page
+      // 意図したページまたはホームページにリダイレクト
       router.push(redirectPath)
     } else {
-      ElMessage.error(response.message || 'Login failed')
+      ElMessage.error(response.message || 'ログインに失敗しました')
     }
   } catch (error) {
-    // console.error('Login error:', error)
-    ElMessage.error(error.response?.data?.detail || 'Login failed')
+    // console.error('ログインエラー:', error)
+    ElMessage.error(error.response?.data?.detail || 'ログインに失敗しました')
   } finally {
     loginLoading.value = false
   }
 }
 
-const resetForm = () => {
-  loginFormRef.value.resetFields()
-}
+// const resetForm = () => {
+//   loginFormRef.value.resetFields()
+// }
 
-// Open the face recognizer popup
+// 顔認識ポップアップを開く
 const openFaceRecognizer = () => {
   faceRecognizerVisible.value = true
 }
 
-// Handle face verification success
+// 顔検証成功の処理
 const handleFaceVerification = (verificationData) => {
   if (verificationData && verificationData.token) {
-    // Store the access token in localStorage with the correct key
+    // アクセストークンを正しいキーでlocalStorageに保存
     localStorage.setItem('token', `${verificationData.token}` || '')
     localStorage.setItem('token_type', `${verificationData.token_type || 'Bearer'}`)
 
-    ElMessage.success('Face login successful!')
+    ElMessage.success('顔ログイン成功！')
 
-    // Close the popup
+    // ポップアップを閉じる
     faceRecognizerVisible.value = false
 
-    // Redirect to the intended page or home page
+    // 意図したページまたはホームページにリダイレクト
     const redirectPath = route.query.redirect || '/user'
     router.push(redirectPath)
   } else {
-    ElMessage.error('Face verification failed. Please try again.')
+    ElMessage.error('顔検証に失敗しました。もう一度お試しください。')
   }
 }
 </script>
@@ -149,6 +149,7 @@ const handleFaceVerification = (verificationData) => {
   display: flex;
   gap: 10px;
   justify-content: center;
+  width: 100%;
 }
 
 .login-form {

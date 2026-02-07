@@ -2,10 +2,10 @@
   <div class="admin-panel">
     <el-main class="app-main">
       <el-tabs v-model="activeTab" type="border-card" class="main-tabs">
-        <el-tab-pane label="User Management" name="users" class="tab-content">
+        <el-tab-pane label="ユーザー管理" name="users" class="tab-content">
           <user-manager />
         </el-tab-pane>
-        <el-tab-pane label="Face Detection Recognizer" name="detection-recognizer" class="tab-content">
+        <el-tab-pane label="顔検出認識" name="detection-recognizer" class="tab-content">
           <face-detection-recognizer />
         </el-tab-pane>
       </el-tabs>
@@ -18,7 +18,7 @@ import { ref } from 'vue';
 import UserManager from '@/components/UserManager.vue';
 import FaceDetectionRecognizer from '@/components/FaceDetectionRecognizer.vue';
 
-// 设置默认激活的标签页
+// デフォルトでアクティブにするタブを設定
 const activeTab = ref('users');
 </script>
 

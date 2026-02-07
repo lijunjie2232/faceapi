@@ -3,9 +3,9 @@
     <el-row :gutter="30" class="main-row">
       <el-col :xs="24" :sm="24" :md="12" :lg="12" class="col-container">
         <div class="upload-section">
-          <h3 class="section-header">Upload Image for Recognition</h3>
+          <h3 class="section-header">認識用画像をアップロード</h3>
 
-          <!-- Conditional rendering: show preview if image exists, otherwise show upload area -->
+          <!-- 条件付きレンダリング：画像が存在する場合はプレビューを表示、そうでない場合はアップロードエリアを表示 -->
           <div v-if="imagePreview" class="image-preview-container">
             <div class="preview-wrapper">
               <img :src="imagePreview" alt="Preview" class="preview-image rounded-img" />
@@ -16,7 +16,7 @@
                 <el-icon>
                   <Refresh />
                 </el-icon>
-                <span>New Image</span>
+                <span>新しい画像</span>
               </el-button>
 
               <el-button type="primary" @click="verifyFace" :loading="loading" :disabled="!imagePreview || loading"
@@ -24,7 +24,7 @@
                 <el-icon>
                   <VideoCamera />
                 </el-icon>
-                <span>Verify Face{{ loading ? '...' : '' }}</span>
+                <span>顔を検証{{ loading ? '...' : '' }}</span>
               </el-button>
             </div>
           </div>
@@ -35,45 +35,45 @@
               <el-icon class="uploader-icon">
                 <Upload />
               </el-icon>
-              <div class="uploader-text">Click or drag an image to this area to upload</div>
-              <p class="uploader-hint">Supports JPG, PNG, WEBP formats</p>
+              <div class="uploader-text">クリックまたはドラッグして画像をこのエリアにアップロード</div>
+              <p class="uploader-hint">JPG、PNG、WEBP形式をサポート</p>
             </el-upload>
           </div>
 
-          <!-- Camera button always visible -->
+          <!-- カメラボタンは常に表示 -->
           <el-button type="primary" @click="showPopOutWindow = true" class="camera-toggle-btn"
             :style="imagePreview ? 'margin-top: 15px;' : ''">
             <el-icon>
               <VideoCamera />
             </el-icon>
-            <span>Use Camera</span>
+            <span>カメラを使用</span>
           </el-button>
         </div>
       </el-col>
 
       <el-col :xs="24" :sm="24" :md="12" :lg="12" class="col-container">
         <div class="result-section">
-          <h3 class="section-header">Verification Results</h3>
+          <h3 class="section-header">検証結果</h3>
           <div v-if="!userInfo && !verificationResult" class="no-results">
-            <el-empty description="No results yet" :image-size="100">
-              <p>Upload an image or use camera and click "Verify Face" to see results</p>
+            <el-empty description="まだ結果がありません" :image-size="100">
+              <p>画像をアップロードするかカメラを使用し、「顔を検証」をクリックして結果を表示</p>
             </el-empty>
           </div>
 
-          <!-- Display verification result if it exists -->
+          <!-- 検証結果が存在する場合は表示 -->
           <div v-if="verificationResult || userInfo" class="verification-result">
             <el-card class="result-item" :class="{ 'recognized': verificationResult?.recognized || userInfo }">
               <template #header>
                 <div class="card-header">
                   <span :class="(verificationResult && verificationResult.recognized) || userInfo ? 'recognized-text' : 'unknown-text'">
-                    {{ (verificationResult && verificationResult.recognized) || userInfo ? '✅ Verified' : '❓ Verification Failed' }}
+                    {{ (verificationResult && verificationResult.recognized) || userInfo ? '✅ 検証済み' : '❓ 検証失敗' }}
                   </span>
                 </div>
               </template>
               <div class="result-content">
-                <p><strong>Status:</strong> {{ verificationResult?.message || (userInfo ? 'Verification successful' : 'Verification pending') }}</p>
+                <p><strong>ステータス:</strong> {{ verificationResult?.message || (userInfo ? '検証成功' : '検証保留中') }}</p>
 
-                <!-- Show user info if verified -->
+                <!-- 検証済みの場合はユーザー情報を表示 -->
                 <div v-if="userInfo" class="user-info-detail-container">
                   <div class="user-card">
                     <div class="user-header">
@@ -97,36 +97,36 @@
                           <span>{{ userInfo.id }}</span>
                         </div>
                         <div class="detail-item">
-                          <label>Email:</label>
+                          <label>メール:</label>
                           <span>{{ userInfo.email }}</span>
                         </div>
                       </div>
 
                       <div class="detail-row">
                         <div class="detail-item">
-                          <label>Role:</label>
+                          <label>役割:</label>
                           <el-tag :type="userInfo.is_admin ? 'danger' : 'info'" size="small">
-                            {{ userInfo.is_admin ? 'Admin' : 'User' }}
+                            {{ userInfo.is_admin ? '管理者' : 'ユーザー' }}
                           </el-tag>
                         </div>
                         <div class="detail-item">
-                          <label>Status:</label>
+                          <label>ステータス:</label>
                           <el-tag :type="userInfo.is_active ? 'success' : 'danger'" size="small">
-                            {{ userInfo.is_active ? 'Active' : 'Inactive' }}
+                            {{ userInfo.is_active ? 'アクティブ' : '非アクティブ' }}
                           </el-tag>
                         </div>
                       </div>
 
                       <div class="detail-row">
                         <div class="detail-item full-width">
-                          <label>Created:</label>
+                          <label>作成日:</label>
                           <span>{{ userInfo.created_at }}</span>
                         </div>
                       </div>
 
                       <div class="detail-row">
                         <div class="detail-item full-width">
-                          <label>Last Updated:</label>
+                          <label>最終更新:</label>
                           <span>{{ userInfo.updated_at }}</span>
                         </div>
                       </div>
@@ -134,69 +134,69 @@
                   </div>
                 </div>
                 
-                <!-- Show failure message when verification fails -->
+                <!-- 検証失敗時に失敗メッセージを表示 -->
                 <div v-if="verificationResult && !verificationResult.recognized && !userInfo">
-                  <p>Face verification failed. Please try again.</p>
+                  <p>顔の検証に失敗しました。もう一度お試しください。</p>
                 </div>
               </div>
             </el-card>
           </div>
 
-          <!-- Display recognition results if they exist -->
+          <!-- 認識結果が存在する場合は表示 -->
           <div v-if="results.length > 0" class="recognition-results">
-            <h4>Recognition Results</h4>
+            <h4>認識結果</h4>
             <div class="results-list">
               <el-card v-for="(result, index) in results" :key="index" class="result-item"
                 :class="{ 'recognized': result.recognized }">
                 <template #header>
                   <div class="card-header">
                     <span :class="result.recognized ? 'recognized-text' : 'unknown-text'">
-                      {{ result.recognized ? '✅ Recognized' : '❓ Unknown Face' }}
+                      {{ result.recognized ? '✅ 認識済み' : '❓ 不明な顔' }}
                     </span>
                   </div>
                 </template>
                 <div class="result-content">
-                  <p><strong>User ID:</strong> {{ result.user_id || 'N/A' }}</p>
-                  <p><strong>Confidence:</strong>
+                  <p><strong>ユーザーID:</strong> {{ result.user_id || 'N/A' }}</p>
+                  <p><strong>信頼度:</strong>
                     <el-progress :percentage="result.confidence ? parseFloat((result.confidence * 100).toFixed(2)) : 0"
                       :color="result.confidence > 0.7 ? '#67C23A' : result.confidence > 0.5 ? '#E6A23C' : '#F56C6C'"
                       :format="() => result.confidence ? `${(result.confidence * 100).toFixed(2)}%` : 'N/A'" />
                   </p>
-                  <p><strong>Message:</strong> {{ result.message }}</p>
+                  <p><strong>メッセージ:</strong> {{ result.message }}</p>
 
-                  <!-- Show user info if recognized -->
+                  <!-- 認識された場合はユーザー情報を表示 -->
                   <div v-if="result.recognized && result.user_info" class="user-info-display">
-                    <h4>User Information</h4>
+                    <h4>ユーザー情報</h4>
                     <div class="user-info-grid">
                       <div class="info-item">
-                        <label>Username:</label>
+                        <label>ユーザー名:</label>
                         <span>{{ result.user_info.username }}</span>
                       </div>
                       <div class="info-item">
-                        <label>Full Name:</label>
+                        <label>氏名:</label>
                         <span>{{ result.user_info.full_name || 'N/A' }}</span>
                       </div>
                       <div class="info-item">
-                        <label>Email:</label>
+                        <label>メール:</label>
                         <span>{{ result.user_info.email }}</span>
                       </div>
                       <div class="info-item">
-                        <label>Role:</label>
+                        <label>役割:</label>
                         <el-tag :type="result.user_info.is_admin ? 'danger' : 'info'" size="small">
-                          {{ result.user_info.is_admin ? 'Admin' : 'User' }}
+                          {{ result.user_info.is_admin ? '管理者' : 'ユーザー' }}
                         </el-tag>
                       </div>
                       <div class="info-item">
-                        <label>Status:</label>
+                        <label>ステータス:</label>
                         <el-tag :type="result.user_info.is_active ? 'success' : 'danger'" size="small">
-                          {{ result.user_info.is_active ? 'Active' : 'Inactive' }}
+                          {{ result.user_info.is_active ? 'アクティブ' : '非アクティブ' }}
                         </el-tag>
                       </div>
                     </div>
 
-                    <!-- Avatar -->
+                    <!-- アバター -->
                     <div class="avatar-section" v-if="result.user_info.head_pic">
-                      <label>Avatar:</label>
+                      <label>アバター:</label>
                       <el-avatar :size="60" :src="'data:image/jpeg;base64,' + result.user_info.head_pic" />
                     </div>
                   </div>
@@ -208,7 +208,7 @@
       </el-col>
     </el-row>
 
-    <!-- Face Detection Pop-out Window -->
+    <!-- 顔検出ポップアウトウィンドウ -->
     <FaceDetectionPopOut v-model="showPopOutWindow" :_handler="handleCameraCapture" />
   </div>
 </template>
@@ -224,7 +224,7 @@ const imagePreview = ref(null);
 const imageFile = ref(null);
 const results = ref([]);
 const verificationResult = ref(null);
-const userInfo = ref(null); // New ref for user info
+const userInfo = ref(null); // ユーザー情報用の新しいref
 const loading = ref(false);
 const showPopOutWindow = ref(false);
 const API_BASE_URL = ref(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000');
@@ -246,13 +246,13 @@ const handleImageUpload = (file) => {
   };
   reader.readAsDataURL(file);
 
-  // Prevent upload to server at this point
+  // この時点でサーバーへのアップロードを防止
   return false;
 };
 
 const handleCameraCapture = async (imageData) => {
   try {
-    // Extract base64 data from data URL
+    // データURLからbase64データを抽出
     const base64Data = imageData.split(',')[1];
     const byteCharacters = atob(base64Data);
     const byteArrays = [];
@@ -271,30 +271,30 @@ const handleCameraCapture = async (imageData) => {
 
     const blob = new Blob(byteArrays, { type: 'image/jpeg' });
 
-    // Create a temporary File object to store for recognition
+    // 認識用に一時的なファイルオブジェクトを作成して保存
     imageFile.value = new File([blob], 'face_capture.jpg', { type: 'image/jpeg' });
-    imagePreview.value = imageData; // Update preview with captured image
+    imagePreview.value = imageData; // キャプチャされた画像でプレビューを更新
 
-    ElMessage.success('Image captured successfully');
+    ElMessage.success('画像が正常にキャプチャされました');
   } catch (error) {
-    // console.error('Error handling camera capture:', error);
-    ElMessage.error('An error occurred while processing the captured image');
+    // console.error('カメラキャプチャの処理中にエラーが発生しました:', error);
+    ElMessage.error('キャプチャされた画像の処理中にエラーが発生しました');
   }
 };
 
 const verifyFace = async () => {
   if (!imageFile.value) {
-    ElMessage.error('Please select an image first');
+    ElMessage.error('まず画像を選択してください');
     return;
   }
 
   loading.value = true;
 
   try {
-    // Create FormData to send the image
+    // 画像を送信するためのFormDataを作成
     const formData = new FormData();
 
-    // Extract base64 data from data URL and convert to Blob
+    // データURLからbase64データを抽出しBlobに変換
     const base64Data = await fileToBase64(imageFile.value);
     const extractedBase64 = base64Data.split(',')[1];
     const byteCharacters = atob(extractedBase64);
@@ -315,7 +315,7 @@ const verifyFace = async () => {
     const blob = new Blob(byteArrays, { type: imageFile.value.type });
     formData.append('image', blob, imageFile.value.name);
 
-    // Send the captured image to the verification endpoint
+    // キャプチャされた画像を検証エンドポイントに送信
     const response = await axios.post(
       `${API_BASE_URL.value}/api/v1/face/verify`,
       formData,
@@ -326,41 +326,41 @@ const verifyFace = async () => {
       }
     );
 
-    // Check if response has the expected structure with 'code' field
+    // 'code'フィールドを持つ期待される構造のレスポンスを確認
     if (response.data.code === 200 || response.data.success || response.data.recognized === true) {
       verificationResult.value = response.data.data;
-      // Get user info using the token
+      // トークンを使用してユーザー情報を取得
       if(response.data.data.token) {
         await getUserInfo(response.data.data.token);
       }
-      ElMessage.success(response.data.message || 'Face verification successful');
+      ElMessage.success(response.data.message || '顔の検証に成功しました');
     } else {
-      // Verification failed
+      // 検証失敗
       verificationResult.value = {
         recognized: false,
-        message: response.data.message || 'Face verification failed'
+        message: response.data.message || '顔の検証に失敗しました'
       };
-      ElMessage.warning(response.data.message || 'Face verification failed, please try again');
+      ElMessage.warning(response.data.message || '顔の検証に失敗しました、もう一度お試しください');
     }
   } catch (error) {
-    // console.error('Error during face verification:', error);
+    // console.error('顔検証中にエラーが発生しました:', error);
 
     if (error.response?.data?.message) {
       ElMessage.error(error.response.data.message);
     } else {
-      ElMessage.error('An error occurred during face verification');
+      ElMessage.error('顔検証中にエラーが発生しました');
     }
 
     verificationResult.value = {
       recognized: false,
-      message: error.response?.data?.message || 'An error occurred during face verification'
+      message: error.response?.data?.message || '顔検証中にエラーが発生しました'
     };
   } finally {
     loading.value = false;
   }
 };
 
-// Function to get user info using the token
+// トークンを使用してユーザー情報を取得する関数
 const getUserInfo = async (token) => {
   try {
     const response = await axios.get(`${API_BASE_URL.value}/api/v1/user/me`, {
@@ -372,11 +372,11 @@ const getUserInfo = async (token) => {
     if (response.data.code === 200) {
       userInfo.value = response.data.data;
     } else {
-      ElMessage.error(response.data.message || 'Failed to fetch user info');
+      ElMessage.error(response.data.message || 'ユーザー情報の取得に失敗しました');
     }
   } catch (error) {
-    // console.error('Error fetching user info:', error);
-    ElMessage.error('An error occurred while fetching user information');
+    // console.error('ユーザー情報の取得中にエラーが発生しました:', error);
+    ElMessage.error('ユーザー情報の取得中にエラーが発生しました');
   }
 }
 
@@ -388,13 +388,13 @@ const clearImage = () => {
   userInfo.value = null;
 };
 
-// Function to get user avatar URL
+// ユーザーアバターURLを取得する関数
 const getUserAvatar = () => {
   if (userInfo.value && userInfo.value.head_pic && userInfo.value.head_pic.trim() !== '') {
-    // If head_pic is a complete URL, use it directly
+    // head_picが完全なURLの場合は直接使用
     return 'data:image/jpeg;base64,' + userInfo.value.head_pic;
   }
-  return undefined; // Return undefined to let el-avatar show default slot content
+  return undefined; // el-avatarにデフォルトスロットコンテンツを表示させるためにundefinedを返す
 };
 </script>
 

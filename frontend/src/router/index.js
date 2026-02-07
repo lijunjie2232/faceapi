@@ -9,7 +9,7 @@ const routes = [
   {
     path: '/',
     name: 'Home',
-    redirect: '/user', // 重定向到user页面作为默认页面
+    redirect: '/user', // userページにリダイレクトしてデフォルトページとする
     meta: { requiresAuth: true }
   },
   {
@@ -41,37 +41,37 @@ const router = createRouter({
   routes
 })
 
-// 全局前守卫
+// グローバル前置ガード
 router.beforeEach((to, from, next) => {
-  // 检查路由是否需要认证
+  // ルートが認証を必要とするかどうかをチェック
   if (to.meta.requiresAuth) {
-    // 检查用户是否已登录
+    // ユーザーがログインしているかどうかをチェック
     const token = localStorage.getItem('token');
     if (!token) {
-      ElMessage.warning('Please log in first.');
-      // 如果未登录，重定向到登录页面
+      ElMessage.warning('まずログインしてください。');
+      // ログインしていない場合はログインページにリダイレクト
       next('/login');
     } else {
-      // 如果需要管理员权限
+      // 管理者権限が必要な場合
       if (to.meta.requiresAdmin) {
-        // 获取用户信息，检查是否为管理员
+        // ユーザー情報を取得し、管理者かどうかをチェック
         const userInfo = JSON.parse(localStorage.getItem('userInfo') || '{}');
         if (userInfo.is_admin) {
-          ElMessage.success(`Welcome back, ${userInfo.username}`);
-          // 用户是管理员，允许访问
+          ElMessage.success(`おかえりなさい、${userInfo.username}`);
+          // ユーザーが管理者の場合、アクセスを許可
           next();
         } else {
-          // 用户不是管理员，显示错误消息并重定向到用户页面
-          ElMessage.error('Access denied: Administrator privileges required');
+          // ユーザーが管理者でない場合、エラーメッセージを表示してユーザーページにリダイレクト
+          ElMessage.error('アクセス拒否：管理者権限が必要です');
           next('/user');
         }
       } else {
-        // 不需要管理员权限的认证路由，继续导航
+        // 管理者権限を必要としない認証ルート、ナビゲーションを続行
         next();
       }
     }
   } else {
-    // 不需要认证的路由，继续导航
+    // 認証を必要としないルート、ナビゲーションを続行
     next();
   }
 });

@@ -1,30 +1,30 @@
 <template>
   <div class="signup-container">
     <el-card class="signup-card">
-      <h2>Sign Up</h2>
+      <h2>サインアップ</h2>
       <el-form :model="signupForm" :rules="signupRules" ref="signupFormRef" label-width="150px" class="signup-form">
-        <el-form-item label="Username" prop="username">
-          <el-input v-model="signupForm.username" placeholder="Enter a username"></el-input>
+        <el-form-item label="ユーザー名" prop="username">
+          <el-input v-model="signupForm.username" placeholder="ユーザー名を入力してください"></el-input>
         </el-form-item>
-        <el-form-item label="Email" prop="email">
-          <el-input v-model="signupForm.email" type="email" placeholder="Enter your email"></el-input>
+        <el-form-item label="メール" prop="email">
+          <el-input v-model="signupForm.email" type="email" placeholder="メールアドレスを入力してください"></el-input>
         </el-form-item>
-        <el-form-item label="Full Name" prop="full_name">
-          <el-input v-model="signupForm.full_name" placeholder="Enter your full name"></el-input>
+        <el-form-item label="氏名" prop="full_name">
+          <el-input v-model="signupForm.full_name" placeholder="氏名を入力してください"></el-input>
         </el-form-item>
-        <el-form-item label="Password" prop="password">
-          <el-input v-model="signupForm.password" type="password" placeholder="Enter your password"></el-input>
+        <el-form-item label="パスワード" prop="password">
+          <el-input v-model="signupForm.password" type="password" placeholder="パスワードを入力してください"></el-input>
         </el-form-item>
-        <el-form-item label="Confirm Password" prop="confirmPassword">
-          <el-input v-model="signupForm.confirmPassword" type="password" placeholder="Confirm your password"></el-input>
+        <el-form-item label="パスワードを確認" prop="confirmPassword">
+          <el-input v-model="signupForm.confirmPassword" type="password" placeholder="パスワードを確認してください"></el-input>
         </el-form-item>
         <el-form-item>
           <div class="button-group">
-            <el-button type="primary" @click="handleSignup" :loading="signupLoading">Sign Up</el-button>
+            <el-button type="primary" @click="handleSignup" :loading="signupLoading">サインアップ</el-button>
           </div>
         </el-form-item>
       </el-form>
-      <p>Already have an account? <router-link to="/login">Login</router-link></p>
+      <p>すでにアカウントをお持ちですか？ <router-link to="/login">ログイン</router-link></p>
     </el-card>
   </div>
 </template>
@@ -47,26 +47,26 @@ const signupForm = reactive({
 
 const signupRules = {
   username: [
-    { required: true, message: 'Please enter a username', trigger: 'blur' },
-    { min: 3, message: 'Username should be at least 3 characters', trigger: 'blur' }
+    { required: true, message: 'ユーザー名を入力してください', trigger: 'blur' },
+    { min: 3, message: 'ユーザー名は少なくとも3文字である必要があります', trigger: 'blur' }
   ],
   email: [
-    { required: true, message: 'Please enter your email', trigger: 'blur' },
-    { type: 'email', message: 'Please enter a valid email address', trigger: 'blur' }
+    { required: true, message: 'メールアドレスを入力してください', trigger: 'blur' },
+    { type: 'email', message: '有効なメールアドレスを入力してください', trigger: 'blur' }
   ],
   full_name: [
-    { required: true, message: 'Please enter your full name', trigger: 'blur' }
+    { required: true, message: '氏名を入力してください', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: 'Please enter your password', trigger: 'blur' },
-    { min: 6, message: 'Password length should be at least 6 characters', trigger: 'blur' }
+    { required: true, message: 'パスワードを入力してください', trigger: 'blur' },
+    { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: 'Please confirm your password', trigger: 'blur' },
+    { required: true, message: 'パスワードを確認してください', trigger: 'blur' },
     {
       validator: (rule, value, callback) => {
         if (value !== signupForm.password) {
-          callback(new Error('Passwords do not match'))
+          callback(new Error('パスワードが一致しません'))
         } else {
           callback()
         }
@@ -92,7 +92,7 @@ const handleSignup = async () => {
       password: signupForm.password
     }
 
-    // Using the environment variable for API base URL
+    // APIベースURLの環境変数を使用
     const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/signup`, userData, {
       headers: {
         'Content-Type': 'application/json'
@@ -100,16 +100,16 @@ const handleSignup = async () => {
     })
 
     if (response.data.code === 200) {
-      ElMessage.success('Registration successful! Please login.')
-      // Redirect to login page after successful registration
+      ElMessage.success('登録成功！ログインしてください。')
+      // 登録成功後にログインページにリダイレクト
       router.push('/login')
     }
     else {
       ElMessage.error(response.data.message)
     }
   } catch (error) {
-    // console.error('Signup error:', error)
-    ElMessage.error(error.response?.data?.message || 'Registration failed')
+    // console.error('サインアップエラー:', error)
+    ElMessage.error(error.response?.data?.message || '登録に失敗しました')
   } finally {
     signupLoading.value = false
   }
@@ -136,7 +136,7 @@ const handleSignup = async () => {
   margin-top: 20px;
 }
 
-/* 调整表单项样式，为长标签提供更多空间 */
+/* 長いラベルにスペースを提供するためにフォームアイテムのスタイルを調整 */
 .el-form-item {
   margin-bottom: 20px;
 }
@@ -144,16 +144,16 @@ const handleSignup = async () => {
 .el-form-item__label {
   text-align: left;
   width: 130px;
-  /* 调整标签宽度 */
+  /* ラベルの幅を調整 */
   padding-right: 10px;
-  /* 为标签和输入框之间添加一些间距 */
+  /* ラベルと入力ボックスの間にスペースを追加 */
 }
 
 .el-form-item__content {
   flex: 1;
-  /* 确保输入框可以充分伸展 */
+  /* 入力ボックスが十分に伸びるようにする */
   min-width: 0;
-  /* 防止内容溢出 */
+  /* コンテンツのオーバーフローを防ぐ */
 }
 
 .button-group {
@@ -166,8 +166,8 @@ const handleSignup = async () => {
 
 .button-group .el-button {
   flex: 0 1 auto;
-  /* 按钮不需要填充全部空间 */
+  /* ボタンはすべてのスペースを埋める必要がない */
   min-width: 120px;
-  /* 设置最小宽度 */
+  /* 最小幅を設定 */
 }
 </style>

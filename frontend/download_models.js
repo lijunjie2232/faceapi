@@ -2,13 +2,13 @@ const fs = require('fs');
 const https = require('https');
 const path = require('path');
 
-// Directory to store models
+// モデルを保存するディレクトリ
 const modelsDir = path.join(__dirname, 'public', 'models');
 if (!fs.existsSync(modelsDir)) {
   fs.mkdirSync(modelsDir, { recursive: true });
 }
 
-// List of models to download
+// ダウンロードするモデルのリスト
 const modelFiles = [
   'tiny_face_detector_model-weights_manifest.json',
   'tiny_face_detector_model-shard1',
@@ -27,16 +27,16 @@ const modelFiles = [
   // 'face_expression_model-shard1',
 ];
 
-// Base URL for models
+// モデルのベースURL
 const baseUrl = 'https://raw.githubusercontent.com/vladmandic/face-api/master/models/';
 
-console.log('Downloading face-api.js models...');
+console.log('face-api.jsモデルをダウンロード中...');
 
 modelFiles.forEach((filename, index) => {
   const url = baseUrl + filename;
   const filePath = path.join(modelsDir, filename);
 
-  console.log(`Downloading ${filename}...`);
+  console.log(`${filename}をダウンロード中...`);
 
   const file = fs.createWriteStream(filePath);
 
@@ -45,19 +45,19 @@ modelFiles.forEach((filename, index) => {
       response.pipe(file);
       file.on('finish', () => {
         file.close();
-        console.log(`${filename} downloaded successfully.`);
+        console.log(`${filename}が正常にダウンロードされました。`);
         
-        // Check if all files are downloaded
+        // すべてのファイルがダウンロードされたかどうかを確認
         if (index === modelFiles.length - 1) {
-          console.log('All models downloaded successfully!');
+          console.log('すべてのモデルが正常にダウンロードされました！');
         }
       });
     } else {
-      console.error(`Failed to download ${filename}. Status code: ${response.statusCode}`);
+      console.error(`${filename}のダウンロードに失敗しました。ステータスコード: ${response.statusCode}`);
     }
   }).on('error', (err) => {
-    console.error(`Error downloading ${filename}:`, err.message);
+    console.error(`${filename}のダウンロードエラー:`, err.message);
     file.close();
-    fs.unlink(filePath, () => {}); // Delete the file if there's an error
+    fs.unlink(filePath, () => {}); // エラーがある場合はファイルを削除
   });
 });

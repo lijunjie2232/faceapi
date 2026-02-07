@@ -1,7 +1,11 @@
 /* Global styles for the face recognition system */
 
+body {
+  margin: 0;
+}
+
 /* Add margin between el-icon and button text */
-.el-button .el-icon + span {
+.el-button .el-icon+span {
   margin-left: 8px;
 }
 

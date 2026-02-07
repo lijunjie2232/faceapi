@@ -1,22 +1,22 @@
 <template>
   <div class="user-dashboard">
-    <h2>User Dashboard</h2>
-    <p>Welcome to your personal user dashboard. Here you can manage your profile and view your recognition history.</p>
+    <h2>ユーザーダッシュボード</h2>
+    <p>個人用ユーザーダッシュボードへようこそ。ここではプロフィールを管理し、認識履歴を表示できます。</p>
 
     <div class="user-info">
       <el-card class="info-card">
         <template #header>
           <div class="card-header">
-            <span>Your Profile</span>
+            <span>あなたのプロフィール</span>
             <el-button v-if="!editing" type="primary" size="small" @click="startEditing">
-              Edit Profile
+              プロフィールを編集
             </el-button>
             <div v-else>
               <el-button type="success" size="small" @click="saveProfile" :disabled="updating">
-                {{ updating ? 'Updating...' : 'Save Changes' }}
+                {{ updating ? '更新中...' : '変更を保存' }}
               </el-button>
               <el-button size="small" @click="cancelEditing" :disabled="updating">
-                Cancel
+                キャンセル
               </el-button>
             </div>
           </div>
@@ -27,53 +27,53 @@
         </div>
         <div v-else-if="userInfo && !authError">
           <el-form v-if="!editing" :model="userInfo" label-position="left" class="profile-display">
-            <el-form-item label="Username:">
+            <el-form-item label="ユーザー名:">
               <span>{{ userInfo.username }}</span>
             </el-form-item>
-            <el-form-item label="Email:">
+            <el-form-item label="メール:">
               <span>{{ userInfo.email }}</span>
             </el-form-item>
-            <el-form-item label="Full Name:">
+            <el-form-item label="氏名:">
               <span>{{ userInfo.full_name }}</span>
             </el-form-item>
             <el-form-item label="ID:">
               <span>{{ userInfo.id }}</span>
             </el-form-item>
-            <el-form-item label="Status:">
+            <el-form-item label="ステータス:">
               <el-tag :type="userInfo.is_active ? 'success' : 'danger'">
-                {{ userInfo.is_active ? 'Active' : 'Inactive' }}
+                {{ userInfo.is_active ? 'アクティブ' : '非アクティブ' }}
               </el-tag>
             </el-form-item>
-            <el-form-item label="Role:">
+            <el-form-item label="役割:">
               <el-tag :type="userInfo.is_admin ? 'warning' : 'info'">
-                {{ userInfo.is_admin ? 'Administrator' : 'Regular User' }}
+                {{ userInfo.is_admin ? '管理者' : '一般ユーザー' }}
               </el-tag>
             </el-form-item>
-            <el-form-item label="Member Since:">
+            <el-form-item label="会員登録日:">
               <span id="memberSince">{{ formatDate(userInfo.created_at) }}</span>
             </el-form-item>
-            <el-form-item label="Last Updated:">
+            <el-form-item label="最終更新:">
               <span id="lastUpdated">{{ formatDate(userInfo.updated_at) }}</span>
             </el-form-item>
 
-            <!-- Head Pic Field -->
-            <el-form-item label="Face Image:">
+            <!-- ヘッドピックフィールド -->
+            <el-form-item label="顔画像:">
               <div class="head-pic-container">
                 <div v-if="userInfo.head_pic" class="head-pic-preview">
-                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview"
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="顔画像プレビュー"
                     class="head-pic-image" />
                 </div>
                 <div v-else class="head-pic-placeholder">
-                  Image not uploaded
+                  画像がアップロードされていません
                 </div>
 
                 <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
                   @click="updateFace" @mouseenter="isHoveringFaceButton = true"
                   @mouseleave="isHoveringFaceButton = false" class="face-image-btn">
                   <span class="button-text">
-                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') :
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? '顔を更新' : '顔を設定する') :
                       (userInfo.head_pic ?
-                        'Face is set' : 'Face is not set') }}
+                        '顔が設定済み' : '顔が未設定') }}
                   </span>
                 </el-button>
               </div>
@@ -82,57 +82,57 @@
 
           <el-form v-else :model="editableInfo" :rules="formRules" ref="profileFormRef" label-position="left"
             class="profile-edit">
-            <el-form-item label="Username:" prop="username">
-              <el-input v-model="editableInfo.username" placeholder="Username" />
+            <el-form-item label="ユーザー名:" prop="username">
+              <el-input v-model="editableInfo.username" placeholder="ユーザー名" />
             </el-form-item>
-            <el-form-item label="Email:" prop="email">
-              <el-input v-model="editableInfo.email" placeholder="Email" />
+            <el-form-item label="メール:" prop="email">
+              <el-input v-model="editableInfo.email" placeholder="メール" />
             </el-form-item>
-            <el-form-item label="Full Name:" prop="full_name">
-              <el-input v-model="editableInfo.full_name" placeholder="Full Name" />
+            <el-form-item label="氏名:" prop="full_name">
+              <el-input v-model="editableInfo.full_name" placeholder="氏名" />
             </el-form-item>
-            <el-form-item label="New Password:" prop="new_password">
+            <el-form-item label="新しいパスワード:" prop="new_password">
               <el-input v-model="editableInfo.new_password" type="password"
-                placeholder="Leave blank to keep current password" />
+                placeholder="空白のままにして現在のパスワードを保持" />
             </el-form-item>
             <el-form-item label="ID:">
               <span>{{ userInfo.id }}</span>
             </el-form-item>
-            <el-form-item label="Status:">
+            <el-form-item label="ステータス:">
               <el-tag :type="userInfo.is_active ? 'success' : 'danger'">
-                {{ userInfo.is_active ? 'Active' : 'Inactive' }}
+                {{ userInfo.is_active ? 'アクティブ' : '非アクティブ' }}
               </el-tag>
             </el-form-item>
-            <el-form-item label="Role:">
+            <el-form-item label="役割:">
               <el-tag :type="userInfo.is_admin ? 'warning' : 'info'">
-                {{ userInfo.is_admin ? 'Administrator' : 'Regular User' }}
+                {{ userInfo.is_admin ? '管理者' : '一般ユーザー' }}
               </el-tag>
             </el-form-item>
-            <el-form-item label="Member Since:">
+            <el-form-item label="会員登録日:">
               <span id="memberSince">{{ formatDate(userInfo.created_at) }}</span>
             </el-form-item>
-            <el-form-item label="Last Updated:">
+            <el-form-item label="最終更新:">
               <span id="lastUpdated">{{ formatDate(userInfo.updated_at) }}</span>
             </el-form-item>
 
-            <!-- Head Pic Field in Edit Mode -->
-            <el-form-item label="Face Image:">
+            <!-- 編集モードでのヘッドピックフィールド -->
+            <el-form-item label="顔画像:">
               <div class="head-pic-container">
                 <div v-if="userInfo.head_pic" class="head-pic-preview">
-                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="Face Image Preview"
+                  <img :src="'data:image/jpeg;base64,' + userInfo.head_pic" alt="顔画像プレビュー"
                     class="head-pic-image" />
                 </div>
                 <div v-else class="head-pic-placeholder">
-                  Image not uploaded
+                  画像がアップロードされていません
                 </div>
 
                 <el-button :type="isHoveringFaceButton ? 'primary' : (userInfo.head_pic ? 'success' : 'warning')"
                   @click="updateFace" @mouseenter="isHoveringFaceButton = true"
                   @mouseleave="isHoveringFaceButton = false" class="face-image-btn">
                   <span class="button-text">
-                    {{ isHoveringFaceButton ? (userInfo.head_pic ? 'Update face' : 'Go to set face') :
+                    {{ isHoveringFaceButton ? (userInfo.head_pic ? '顔を更新' : '顔を設定する') :
                       (userInfo.head_pic ?
-                        'Face is set' : 'Face is not set') }}
+                        '顔が設定済み' : '顔が未設定') }}
                   </span>
                 </el-button>
               </div>
@@ -140,36 +140,36 @@
           </el-form>
         </div>
         <div v-else-if="authError">
-          <p class="auth-error">Authentication failed. Redirecting to login...</p>
+          <p class="auth-error">認証に失敗しました。ログインページにリダイレクトしています...</p>
         </div>
         <div v-else>
-          <p>Error loading user information. Please refresh the page.</p>
+          <p>ユーザー情報の読み込みに失敗しました。ページを更新してください。</p>
         </div>
       </el-card>
 
       <el-card class="info-card">
         <template #header>
           <div class="card-header">
-            <span>Recognition History</span>
+            <span>認識履歴</span>
           </div>
         </template>
-        <p>Recent face recognition logs and activity will appear here.</p>
+        <p>最近の顔認識ログと活動がここに表示されます。</p>
         <el-table :data="recognitionHistory" style="width: 100%; margin-top: 15px;">
-          <el-table-column prop="date" label="Date" width="180"></el-table-column>
-          <el-table-column prop="status" label="Status" width="120">
+          <el-table-column prop="date" label="日付" width="180"></el-table-column>
+          <el-table-column prop="status" label="ステータス" width="120">
             <template #default="scope">
               <el-tag :type="scope.row.status === 'Success' ? 'success' : 'danger'">
                 {{ scope.row.status }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="confidence" label="Confidence" width="120"></el-table-column>
-          <el-table-column prop="details" label="Details"></el-table-column>
+          <el-table-column prop="confidence" label="信頼度" width="120"></el-table-column>
+          <el-table-column prop="details" label="詳細"></el-table-column>
         </el-table>
       </el-card>
     </div>
 
-    <!-- Face Detection Pop-out Window -->
+    <!-- 顔検出ポップアウトウィンドウ -->
     <FaceDetectionPopOut v-model="showFaceDetectionPopOut" :_handler="handleFaceCaptured" />
   </div>
 </template>
@@ -181,14 +181,14 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import axios from 'axios';
 import FaceDetectionPopOut from '../components/FaceDetectionPopOut.vue';
 
-// Inject userInfo from parent component (App)
+// 親コンポーネント(App)からuserInfoを注入
 const injectedUserInfo = inject('userInfo');
 const userInfo = ref(null);
 const editableInfo = ref({
   username: '',
   email: '',
   full_name: '',
-  new_password: ''  // New field for password
+  new_password: ''  // パスワード用の新しいフィールド
 });
 const loading = ref(true);
 const editing = ref(false);
@@ -197,74 +197,74 @@ const authError = ref(false);
 const isHoveringFaceButton = ref(false);
 const showFaceDetectionPopOut = ref(false);
 const recognitionHistory = ref([
-  { date: '2023-11-30 14:30:22', status: 'Success', confidence: '98.5%', details: 'Office entrance' },
-  { date: '2023-11-30 09:15:47', status: 'Success', confidence: '96.2%', details: 'Main gate' },
-  { date: '2023-11-29 18:45:12', status: 'Failed', confidence: '78.1%', details: 'Back entrance' },
-  { date: '2023-11-29 08:22:33', status: 'Success', confidence: '95.7%', details: 'Main gate' }
+  { date: '2023-11-30 14:30:22', status: 'Success', confidence: '98.5%', details: 'オフィス入口' },
+  { date: '2023-11-30 09:15:47', status: 'Success', confidence: '96.2%', details: 'メインゲート' },
+  { date: '2023-11-29 18:45:12', status: 'Failed', confidence: '78.1%', details: '裏口' },
+  { date: '2023-11-29 08:22:33', status: 'Success', confidence: '95.7%', details: 'メインゲート' }
 ]);
 const profileFormRef = ref(null);
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
 const router = useRouter();
 
-// Inject checkLoginStatus from parent component (App)
+// 親コンポーネント(App)からcheckLoginStatusを注入
 const injectedCheckLoginStatus = inject('checkLoginStatus');
 
-// Form validation rules
+// フォーム検証ルール
 const formRules = {
   username: [
-    { required: true, message: 'Please enter a username', trigger: 'blur' },
-    { min: 3, max: 20, message: 'Length should be 3 to 20 characters', trigger: 'blur' }
+    { required: true, message: 'ユーザー名を入力してください', trigger: 'blur' },
+    { min: 3, max: 20, message: '長さは3〜20文字である必要があります', trigger: 'blur' }
   ],
   email: [
-    { required: true, message: 'Please enter your email', trigger: 'blur' },
-    { type: 'email', message: 'Please enter a valid email address', trigger: 'blur' }
+    { required: true, message: 'メールアドレスを入力してください', trigger: 'blur' },
+    { type: 'email', message: '有効なメールアドレスを入力してください', trigger: 'blur' }
   ],
   full_name: [
-    { required: true, message: 'Please enter your full name', trigger: 'blur' },
-    { min: 2, max: 50, message: 'Length should be 2 to 50 characters', trigger: 'blur' }
+    { required: true, message: '氏名を入力してください', trigger: 'blur' },
+    { min: 2, max: 50, message: '長さは2〜50文字である必要があります', trigger: 'blur' }
   ],
   new_password: [
-    { min: 6, message: 'Password should be at least 8 characters', trigger: 'blur' }
+    { min: 6, message: 'パスワードは少なくとも8文字である必要があります', trigger: 'blur' }
   ]
 };
 
-// Function to format dates
+// 日付をフォーマットする関数
 const formatDate = (dateString) => {
   const options = { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
   return new Date(dateString).toLocaleDateString(undefined, options);
 };
 
-// Function to handle face detection pop-out
+// 顔検出ポップアウトを処理する関数
 const updateFace = () => {
   showFaceDetectionPopOut.value = true;
 };
 
-// Start editing profile
+// プロフィール編集を開始
 const startEditing = () => {
-  // Copy current user info to editable fields
+  // 現在のユーザー情報を編集可能なフィールドにコピー
   editableInfo.value = {
     username: userInfo.value.username,
     email: userInfo.value.email,
     full_name: userInfo.value.full_name,
-    new_password: ''  // Initialize as empty
+    new_password: ''  // 空として初期化
   };
   editing.value = true;
 };
 
-// Function to get token from localStorage
+// localStorageからトークンを取得する関数
 const getToken = () => {
   return localStorage.getItem('token') || '';
 };
 
-// Save profile changes
+// プロフィール変更を保存
 const saveProfile = async () => {
-  // Validate form before submitting
+  // 送信前にフォームを検証
   if (!profileFormRef.value) return;
 
   const valid = await profileFormRef.value.validate().catch(() => false);
   if (!valid) {
-    ElMessage.error('Please correct the errors in the form');
+    ElMessage.error('フォームのエラーを修正してください');
     return;
   }
 
@@ -273,14 +273,14 @@ const saveProfile = async () => {
   try {
     const token = getToken();
 
-    // Prepare request data without password initially
+    // 最初はパスワードなしでリクエストデータを準備
     const requestData = {
       username: editableInfo.value.username,
       email: editableInfo.value.email,
       full_name: editableInfo.value.full_name
     };
 
-    // Only add the password field if it's provided
+    // パスワードが提供されている場合のみパスワードフィールドを追加
     if (editableInfo.value.new_password && editableInfo.value.new_password.trim() !== '') {
       requestData.password = editableInfo.value.new_password;
     }
@@ -297,50 +297,50 @@ const saveProfile = async () => {
     );
 
     if (response.data.code === 200 || response.data.success) {
-      // Update the user info in the app state
+      // アプリケーションの状態でユーザー情報を更新
       userInfo.value = response.data.data;
 
-      // Update the injected user info in App.vue
+      // App.vueで注入されたユーザー情報を更新
       if (injectedUserInfo && injectedUserInfo.value) {
         injectedUserInfo.value = response.data.data;
       }
 
       editing.value = false;
-      ElMessage.success(response.data.message || 'Profile updated successfully');
+      ElMessage.success(response.data.message || 'プロフィールが正常に更新されました');
 
-      // Call checkLoginStatus function from App.vue to refresh user info in header
+      // App.vueからcheckLoginStatus関数を呼び出してヘッダーのユーザー情報を更新
       if (injectedCheckLoginStatus) {
         injectedCheckLoginStatus();
       }
 
     } else {
-      ElMessage.error(response.data.message || 'Failed to update profile');
+      ElMessage.error(response.data.message || 'プロフィールの更新に失敗しました');
     }
   } catch (error) {
-    // console.error('Error updating profile:', error);
+    // console.error('プロフィール更新エラー:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
-      ElMessage.error(error.message || 'An error occurred while updating profile');
+      ElMessage.error(error.message || 'プロフィールの更新中にエラーが発生しました');
     }
   } finally {
     updating.value = false;
   }
 };
 
-// Cancel editing and revert changes
+// 編集をキャンセルして変更を元に戻す
 const cancelEditing = () => {
   ElMessageBox.confirm(
-    'Are you sure you want to discard unsaved changes?',
-    'Warning',
+    '保存されていない変更を破棄してもよろしいですか？',
+    '警告',
     {
-      confirmButtonText: 'Yes',
-      cancelButtonText: 'No',
+      confirmButtonText: 'はい',
+      cancelButtonText: 'いいえ',
       type: 'warning'
     }
   ).then(() => {
     editing.value = false;
-    // Reset editable fields to original values
+    // 編集可能なフィールドを元の値にリセット
     editableInfo.value = {
       username: userInfo.value.username,
       email: userInfo.value.email,
@@ -348,11 +348,11 @@ const cancelEditing = () => {
       new_password: ''
     };
   }).catch(() => {
-    // User canceled, continue editing
+    // ユーザーがキャンセル、編集を続ける
   });
 };
 
-// Watch for changes in the injected userInfo
+// 注入されたuserInfoの変更を監視
 watch(injectedUserInfo, (newVal) => {
   if (newVal && Object.keys(newVal).length > 0) {
     userInfo.value = newVal;
@@ -363,7 +363,7 @@ watch(injectedUserInfo, (newVal) => {
   }
 }, { immediate: true });
 
-// Initialize with the current value
+// 現在の値で初期化
 if (injectedUserInfo && injectedUserInfo.value && Object.keys(injectedUserInfo.value).length > 0) {
   userInfo.value = injectedUserInfo.value;
   loading.value = false;
@@ -372,7 +372,7 @@ if (injectedUserInfo && injectedUserInfo.value && Object.keys(injectedUserInfo.v
   authError.value = true;
 }
 
-// Redirect to login if auth error occurs
+// 認証エラーが発生した場合にログインにリダイレクト
 watch(authError, (newVal) => {
   if (newVal) {
     setTimeout(() => {
@@ -383,17 +383,17 @@ watch(authError, (newVal) => {
 
 
 
-// Function to handle face captured from pop-out window
+// ポップアウトウィンドウからキャプチャされた顔を処理する関数
 const handleFaceCaptured = async (imageData) => {
   try {
-    // Create FormData to send image as form data
+    // 画像をフォームデータとして送信するためにFormDataを作成
     const formData = new FormData();
 
-    // get token
+    // トークンを取得
     const token = getToken();
 
-    // Convert base64 image data to blob and append to form data
-    const byteCharacters = atob(imageData.split(',')[1]); // Remove data:image/jpeg;base64, prefix
+    // base64画像データをblobに変換してフォームデータに追加
+    const byteCharacters = atob(imageData.split(',')[1]); // data:image/jpeg;base64,プレフィックスを削除
     const byteArrays = [];
 
     for (let offset = 0; offset < byteCharacters.length; offset += 512) {
@@ -411,7 +411,7 @@ const handleFaceCaptured = async (imageData) => {
     const blob = new Blob(byteArrays, { type: 'image/jpeg' });
     formData.append('image', blob, 'face_image.jpg');
 
-    // Upload the captured image to update the user's head pic
+    // キャプチャされた画像をアップロードしてユーザーのヘッドピックを更新
     const response = await axios.put(
       `${API_BASE_URL}/api/v1/face/me`,
       formData,
@@ -423,22 +423,22 @@ const handleFaceCaptured = async (imageData) => {
       }
     );
 
-    // Check if response has the expected structure with 'code' field
+    // 'code'フィールドを持つ期待される構造のレスポンスを確認
     if (response.data.code === 200 || response.data.success) {
-      ElMessage.success(response.data.message || 'Face image updated successfully');
-      // Update user info to reflect the new head pic
+      ElMessage.success(response.data.message || '顔画像が正常に更新されました');
+      // 新しいヘッドピックを反映するためにユーザー情報を更新
       if (injectedUserInfo && injectedUserInfo.value) {
-        injectedUserInfo.value.head_pic = imageData.split(',')[1]; // Store just the base64 part
+        injectedUserInfo.value.head_pic = imageData.split(',')[1]; // base64部分のみを保存
       }
     } else {
-      ElMessage.error(response.data.message || 'Failed to update face image');
+      ElMessage.error(response.data.message || '顔画像の更新に失敗しました');
     }
   } catch (error) {
-    // console.error('Error updating face image:', error);
+    // console.error('顔画像更新エラー:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
-      ElMessage.error(error.message || 'An error occurred while updating face image');
+      ElMessage.error(error.message || '顔画像の更新中にエラーが発生しました');
     }
   }
 };
@@ -522,12 +522,12 @@ h2 {
   overflow: hidden;
 }
 
-/* Default text when not hovering */
+/* ホバーしていないときのデフォルトテキスト */
 .face-image-btn .button-text:not(:hover)::before {
   content: attr(data-normal-text);
 }
 
-/* Hover text when hovering */
+/* ホバー時のテキスト */
 .face-image-btn:hover .button-text::before {
   content: attr(data-hover-text);
 }

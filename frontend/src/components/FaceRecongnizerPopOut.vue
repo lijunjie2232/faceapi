@@ -19,25 +19,25 @@
 
       <div v-if="loadingModels" class="loading-overlay">
         <el-progress type="circle" :percentage="modelLoadProgress" :width="150" :stroke-width="10" />
-        <p>Loading face detection models...</p>
+        <p>顔検出モデルを読み込み中...</p>
       </div>
     </div>
 
     <div v-if="!isCameraOpen && !loadingModels" class="placeholder-container">
       <el-empty description="Camera is not active" :image-size="150">
-        <p>Camera starting automatically...</p>
+        <p>カメラを自動的に起動中...</p>
       </el-empty>
     </div>
 
-    <!-- Status message when verifying faces -->
+    <!-- 顔を検証中のステータスメッセージ -->
     <div v-if="verifyingFace" class="verifying-message">
-      <el-alert title="Verifying face, please wait..." type="info" :closable="false" show-icon>
+      <el-alert title="顔を検証中、お待ちください..." type="info" :closable="false" show-icon>
       </el-alert>
     </div>
 
-    <!-- Action buttons -->
+    <!-- アクションボタン -->
     <div class="button-actions">
-      <el-button @click="handleClose">Close</el-button>
+      <el-button @click="handleClose">閉じる</el-button>
     </div>
   </el-dialog>
 </template>
@@ -47,7 +47,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElDialog, ElButton, ElIcon, ElProgress, ElEmpty, ElMessage, ElAlert } from 'element-plus'
 import { FaceUtils } from '@/utils/face.js'
 
-// Define props and emits
+// propsとemitsを定義
 const props = defineProps({
   modelValue: {
     type: Boolean,
@@ -68,25 +68,25 @@ const canvasRef = ref(null)
 const isCameraOpen = ref(false)
 const loadingModels = ref(true)
 const modelLoadProgress = ref(0)
-const flipEnabled = ref(!!localStorage.getItem('CameraFlipEnabled')) // Load flip state from localStorage
+const flipEnabled = ref(!!localStorage.getItem('CameraFlipEnabled')) // localStorageからフリップ状態を読み込み
 let faceUtils = null
 let detectionInterval = null
-const verifyingFace = ref(false) // Flag to prevent multiple verification requests
+const verifyingFace = ref(false) // 複数の検証リクエストを防ぐためのフラグ
 
-// Watch for dialog visibility to auto-start camera
+// ダイアログの可視性を監視してカメラを自動起動
 watch(dialogVisible, async (newVal) => {
   if (newVal && !isCameraOpen.value && !loadingModels.value) {
-    // Wait a bit to ensure UI is rendered before starting camera
+    // UIがレンダリングされる前にカメラを起動するために少し待機
     setTimeout(async () => {
       await startCamera()
     }, 300)
   } else if (!newVal) {
-    // Stop camera when dialog closes
+    // ダイアログが閉じたらカメラを停止
     stopCamera()
   }
 })
 
-// Computed styles for video and canvas
+// ビデオとキャンバスの計算済みスタイル
 const videoStyle = computed(() => ({
   transform: flipEnabled.value ? 'scaleX(-1)' : 'none'
 }))
@@ -95,10 +95,10 @@ const canvasStyle = computed(() => ({
   transform: flipEnabled.value ? 'scaleX(-1)' : 'none'
 }))
 
-// Toggle flip function
+// フリップ機能の切り替え
 const toggleFlip = () => {
   flipEnabled.value = !flipEnabled.value
-  // Save flip state to localStorage
+  // フリップ状態をlocalStorageに保存
   if (flipEnabled.value) {
     localStorage.setItem('CameraFlipEnabled', 'true')
   } else {
@@ -110,7 +110,7 @@ const loadModels = async () => {
   try {
     faceUtils = new FaceUtils()
 
-    // Load face-api.js models
+    // face-api.jsモデルを読み込む
     const success = await faceUtils.loadFaceApi((progress) => {
       modelLoadProgress.value = progress
     })
@@ -121,16 +121,16 @@ const loadModels = async () => {
       }, 500)
     }
   } catch (error) {
-    // console.error("Error loading face-api.js:", error)
-    ElMessage.error("Failed to load face detection models")
+    // console.error("face-api.jsの読み込みエラー:", error)
+    ElMessage.error("顔検出モデルの読み込みに失敗しました")
     loadingModels.value = false
   }
 }
 
-// Stop camera
+// カメラ停止
 const stopCamera = () => {
   if (detectionInterval) {
-    clearTimeout(detectionInterval) // Use clearTimeout instead of cancelAnimationFrame
+    clearTimeout(detectionInterval) // cancelAnimationFrameの代わりにclearTimeoutを使用
     detectionInterval = null
   }
 
@@ -141,12 +141,12 @@ const stopCamera = () => {
   isCameraOpen.value = false
 }
 
-// Start camera
+// カメラ開始
 const startCamera = async () => {
   if (loadingModels.value) return
 
   try {
-    // Request access to the camera
+    // カメラへのアクセスを要求
     stream = await navigator.mediaDevices.getUserMedia({
       video: {
         facingMode: "user",
@@ -159,120 +159,120 @@ const startCamera = async () => {
       videoRef.value.srcObject = stream
       isCameraOpen.value = true
 
-      // Start face detection loop after a delay to allow video to load
+      // ビデオの読み込みを待ってから顔検出ループを開始
       setTimeout(startFaceDetectionLoop, 500)
     }
   } catch (err) {
-    // console.error("Could not access the camera:", err)
-    ElMessage.error("Could not access the camera. Please check permissions.")
+    // console.error("カメラにアクセスできませんでした:", err)
+    ElMessage.error("カメラにアクセスできませんでした。権限を確認してください。")
   }
 }
 
 let stream = null
 let ctx = null
 
-// Start face detection loop for real-time processing
+// リアルタイム処理のための顔検出ループを開始
 const startFaceDetectionLoop = async () => {
   if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceUtils || !dialogVisible.value) return
 
   try {
-    // Get the display dimensions of the video element
+    // ビデオ要素の表示寸法を取得
     const video = videoRef.value
     const canvas = canvasRef.value
 
-    // Wait for the video to be loaded and dimensions to be available
+    // ビデオが読み込まれて寸法が利用可能になるまで待機
     if (video.videoWidth === 0 || video.videoHeight === 0) {
-      // Retry after a short delay if video dimensions aren't ready yet
+      // ビデオ寸法がまだ準備できていない場合は少し遅れて再試行
       setTimeout(startFaceDetectionLoop, 100)
       return
     }
 
-    // Get the computed styles of the video element to determine actual display size
+    // 実際の表示サイズを決定するためにビデオ要素の計算済みスタイルを取得
     const computedStyle = window.getComputedStyle(video)
     const videoDisplayWidth = parseFloat(computedStyle.getPropertyValue('width'))
     const videoDisplayHeight = parseFloat(computedStyle.getPropertyValue('height'))
 
-    // Set canvas dimensions to match the actual video display size
+    // キャンバスの寸法を実際のビデオ表示サイズに合わせて設定
     canvas.width = videoDisplayWidth
     canvas.height = videoDisplayHeight
 
-    // Set the canvas position to match the video element's offset
+    // キャンバスの位置をビデオ要素のオフセットに合わせて設定
     canvas.style.position = 'absolute'
     canvas.style.top = video.offsetTop + 'px'
     canvas.style.left = video.offsetLeft + 'px'
     canvas.style.width = videoDisplayWidth + 'px'
     canvas.style.height = videoDisplayHeight + 'px'
 
-    // Apply flip transformation to canvas if enabled
+    // 有効な場合はキャンバスにフリップ変換を適用
     canvas.style.transform = flipEnabled.value ? 'scaleX(-1)' : 'none'
 
-    // Perform face detection on the actual video
+    // 実際のビデオで顔検出を実行
     const detections = await faceUtils.detectFaces(video)
 
-    // Draw detections on canvas
+    // キャンバスに検出結果を描画
     if (ctx == null) {
       ctx = canvas.getContext('2d')
     }
 
-    // Scale the detections to match the display size
+    // 表示サイズに合わせて検出結果をスケーリング
     if (detections.length > 0) {
-      // Calculate scale factors based on the actual video element's display size vs its intrinsic size
+      // 実際のビデオ要素の表示サイズと内在サイズに基づいてスケール係数を計算
       const scaleX = canvas.width / video.videoWidth
       const scaleY = canvas.height / video.videoHeight
 
-      // Use the utility function to draw detections
+      // ユーティリティ関数を使用して検出結果を描画
       faceUtils.drawDetections(canvas, detections, scaleX, scaleY, flipEnabled.value)
 
-      // If we detect a face and are not currently verifying, send it to the server
+      // 顔を検出し、現在検証中でない場合はサーバーに送信
       if (!verifyingFace.value) {
-        // Capture the current frame and send it for verification
+        // 現在のフレームをキャプチャして検証用に送信
         const imageDataUrl = faceUtils.captureImageFromVideo(video, flipEnabled.value)
 
-        // Convert to form data and send to server
+        // フォームデータに変換してサーバーに送信
         const formData = faceUtils.imageToFormData(imageDataUrl, 'face_image.jpg')
 
-        // Start verification process
+        // 検証プロセスを開始
         verifyFace(formData)
       }
     } else {
-      // No face detected, continue the loop
+      // 顔が検出されない場合はループを継続
       if (isCameraOpen.value) {
         detectionInterval = setTimeout(startFaceDetectionLoop, 500) // ~2 FPS
       }
     }
   } catch (error) {
-    // console.error("Error during face detection:", error)
-    // Retry after a short delay
+    // console.error("顔検出中にエラーが発生しました:", error)
+    // 少し遅れて再試行
     if (isCameraOpen.value) {
       detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
     }
   }
 }
 
-// Function to verify face with server
+// サーバーで顔を検証する関数
 const verifyFace = async (formData) => {
-  if (verifyingFace.value) return // Skip if already verifying
+  if (verifyingFace.value) return // すでに検証中の場合はスキップ
 
   verifyingFace.value = true
 
   try {
-    // Send the captured image to the verification endpoint
+    // キャプチャされた画像を検証エンドポイントに送信
     const response = await faceUtils.verifyFace(formData)
 
-    // Check if response has the expected structure with 'code' field
+    // 'code'フィールドを持つ期待される構造のレスポンスを確認
     if (response.code === 200) {
-      // Extract relevant data from the response
+      // レスポンスから関連データを抽出
       const { recognized, user_id, confidence, data, message } = response
       const { token, token_type } = data
       
-      // Store the token in localStorage
+      // トークンをlocalStorageに保存
       localStorage.setItem('token', token)
       localStorage.setItem('token_type', token_type)
 
-      // Show success message with user info
-      ElMessage.success(message || `Face recognized successfully as user ${user_id}`);
+      // ユーザー情報を含む成功メッセージを表示
+      ElMessage.success(message || `ユーザー${user_id}として顔が正常に認識されました`);
 
-      // Emit event with verification result
+      // 検証結果とともにイベントを発行
       emit('faceVerified', { 
         success: true, 
         recognized: recognized,
@@ -282,44 +282,44 @@ const verifyFace = async (formData) => {
         token_type: token_type,
       });
 
-      // Close the dialog after successful verification
+      // 成功した検証後にダイアログを閉じる
       handleClose()
     } else {
-      // Verification failed - continue detection loop
-      ElMessage.warning(response.message || 'Face recognition failed, please try again');
+      // 検証失敗 - 検出ループを継続
+      ElMessage.warning(response.message || '顔認識に失敗しました、もう一度お試しください');
     }
   } catch (error) {
-    // console.error('Error during face verification:', error);
+    // console.error('顔検証中にエラーが発生しました:', error);
 
     if (error.response?.data?.message) {
       ElMessage.error(error.response.data.message);
     } else {
-      ElMessage.error('An error occurred during face verification');
+      ElMessage.error('顔検証中にエラーが発生しました');
     }
   } finally {
-    // Reset the verifying flag to allow next verification
+    // 次の検証を許可するために検証フラグをリセット
     verifyingFace.value = false
 
-    // Continue detection loop if camera is still open
+    // カメラがまだ開いている場合は検出ループを継続
     if (isCameraOpen.value) {
       detectionInterval = setTimeout(startFaceDetectionLoop, 500)
     }
   }
 }
 
-// Handle dialog close
+// ダイアログクローズの処理
 const handleClose = () => {
   stopCamera()
-  verifyingFace.value = false // Reset verification flag
+  verifyingFace.value = false // 検証フラグをリセット
   dialogVisible.value = false
 }
 
-// Initialize when component mounts
+// コンポーネントマウント時の初期化
 onMounted(async () => {
   await loadModels()
 })
 
-// Clean up camera stream when component unmounts
+// コンポーネントアンマウント時のカメラストリームのクリーンアップ
 onUnmounted(() => {
   stopCamera()
 })
@@ -365,9 +365,9 @@ onUnmounted(() => {
   display: block;
   border-radius: 12px;
   object-fit: cover;
-  /* Ensures the video maintains aspect ratio */
+  /* ビデオがアスペクト比を維持することを保証 */
   transition: transform 0.2s ease;
-  /* Smooth transition for flip effect */
+  /* フリップ効果のスムーズな遷移 */
 }
 
 .detection-canvas {
@@ -376,7 +376,7 @@ onUnmounted(() => {
   left: 0;
   pointer-events: none;
   transition: transform 0.2s ease;
-  /* Smooth transition for flip effect */
+  /* フリップ効果のスムーズな遷移 */
 }
 
 .button-actions {
@@ -387,11 +387,11 @@ onUnmounted(() => {
 
 .capture-btn {
   background-color: #67c23a;
-  /* Green color */
+  /* 緑色 */
   border-color: #67c23a;
-  /* Green border */
+  /* 緑色の枠線 */
   color: white;
-  /* White text */
+  /* 白い文字 */
   padding: 12px 20px;
   font-size: 16px;
   font-weight: 500;
@@ -400,7 +400,7 @@ onUnmounted(() => {
 .capture-btn:hover,
 .capture-btn:focus {
   background-color: #5daf34;
-  /* Darker green on hover */
+  /* ホバー時の暗い緑色 */
   border-color: #5daf34;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
@@ -408,11 +408,11 @@ onUnmounted(() => {
 
 .confirm-btn {
   background-color: #67c23a;
-  /* Green color */
+  /* 緑色 */
   border-color: #67c23a;
-  /* Green border */
+  /* 緑色の枠線 */
   color: white;
-  /* White text */
+  /* 白い文字 */
   padding: 12px 20px;
   font-size: 16px;
   font-weight: 500;
@@ -421,7 +421,7 @@ onUnmounted(() => {
 .confirm-btn:hover,
 .confirm-btn:focus {
   background-color: #5daf34;
-  /* Darker green on hover */
+  /* ホバー時の暗い緑色 */
   border-color: #5daf34;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(103, 194, 58, 0.3);
