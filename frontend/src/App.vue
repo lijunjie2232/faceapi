@@ -10,12 +10,7 @@
             <span>Face Recognition System</span>
           </h1>
           <div class="user-actions">
-            <el-button 
-              v-if="userInfo && userInfo.is_admin" 
-              class="admin-link-btn" 
-              type="text" 
-              @click="goToAdmin"
-            >
+            <el-button v-if="userInfo && userInfo.is_admin" class="admin-link-btn" type="text" @click="goToAdmin">
               <el-icon>
                 <Management />
               </el-icon>
@@ -89,30 +84,30 @@ const fetchUserInfo = async () => {
       }
     });
 
-    if (response.data.success) {
+    if (response.data.code === 200) {
       userInfo.value = response.data.data;
       localStorage.setItem('username', userInfo.value.username);
       localStorage.setItem('userInfo', JSON.stringify(response.data.data)); // Store full user info
       username.value = userInfo.value.username;
     } else if (response.data.detail === "Not authenticated") {
       // Token is invalid, need to login again
-      console.error('Token is invalid, redirecting to login');
+      // console.error('Token is invalid, redirecting to login');
       // Clear local storage
       localStorage.removeItem('token'); // Also remove the token
       localStorage.removeItem('username'); // Also remove the username
       localStorage.removeItem('userInfo'); // Remove user info
     } else {
-      console.error('Failed to fetch user info:', response.data.message);
+      // console.error('Failed to fetch user info:', response.data.message);
     }
   } catch (error) {
     if (error.response && error.response.data && error.response.data.detail === "Not authenticated") {
       // Token is invalid, need to login again
-      console.error('Token is invalid, redirecting to login');
+      // console.error('Token is invalid, redirecting to login');
       // Clear local storage
       localStorage.removeItem('token'); // Also remove the token
       localStorage.removeItem('uesrname'); // Also remove the username
     } else {
-      console.error('Error fetching user info:', error);
+      // console.error('Error fetching user info:', error);
     }
   } finally {
     loading.value = false;
@@ -122,14 +117,14 @@ const fetchUserInfo = async () => {
 const checkLoginStatus = async () => {
   try {
     // Check for user token in localStorage instead of userInfo
-    await fetchUserInfo();
     const token = localStorage.getItem('token');
     if (token) {
+      await fetchUserInfo();
       // Verify token exists and extract username from it if needed
       // In a real implementation, you might decode JWT to get user info
       // For now, we'll store username separately or fetch from API
       showMainApp.value = true;
-      console.log('User is authenticated');
+      // console.log('User is authenticated');
 
       // If currently on login/signup page but authenticated, redirect based on route
       if (route.path === '/login' || route.path === '/signup') {
@@ -144,7 +139,7 @@ const checkLoginStatus = async () => {
       }
     }
   } catch (error) {
-    console.error('Checking login status failed:', error);
+    // console.error('Checking login status failed:', error);
     showMainApp.value = false;
     router.push('/login');
   }
@@ -165,7 +160,7 @@ const logout = async () => {
     await router.push('/login');
     ElMessage.success('Logged out successfully');
   } catch (error) {
-    console.error('Logout failed:', error);
+    // console.error('Logout failed:', error);
     ElMessage.error('Logout failed');
   }
 };

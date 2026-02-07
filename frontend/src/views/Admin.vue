@@ -5,14 +5,8 @@
         <el-tab-pane label="User Management" name="users" class="tab-content">
           <user-manager />
         </el-tab-pane>
-        <el-tab-pane label="Face Detection" name="detection" class="tab-content">
-          <face-detection />
-        </el-tab-pane>
-        <el-tab-pane label="Face Recognition" name="recognize" class="tab-content">
-          <face-recognizer />
-        </el-tab-pane>
-        <el-tab-pane label="Face Registration" name="register" class="tab-content">
-          <face-register />
+        <el-tab-pane label="Face Detection Recognizer" name="detection-recognizer" class="tab-content">
+          <face-detection-recognizer />
         </el-tab-pane>
       </el-tabs>
     </el-main>
@@ -21,10 +15,8 @@
 
 <script setup>
 import { ref } from 'vue';
-import FaceDetection from '@/components/FaceDetection.vue';
-import FaceRecognizer from '@/components/FaceRecognizer.vue';
 import UserManager from '@/components/UserManager.vue';
-import FaceRegister from '@/components/FaceRegister.vue';
+import FaceDetectionRecognizer from '@/components/FaceDetectionRecognizer.vue';
 
 // 设置默认激活的标签页
 const activeTab = ref('users');
