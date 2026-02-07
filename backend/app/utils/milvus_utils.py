@@ -3,19 +3,19 @@ from typing import Optional
 
 from ..db import get_milvus_client
 
-# Dictionary to store locks for each collection
+# 各コレクションのロックを格納する辞書
 _collection_locks = {}
 
 
 async def load_collection(
     collection_name: str, timeout: Optional[float] = None, **kwargs
 ):
-    """Load the milvus collection."""
-    # Get or create a lock for this specific collection
+    """milvusコレクションをロード。"""
+    # この特定のコレクションのロックを取得または作成
     if collection_name not in _collection_locks:
         _collection_locks[collection_name] = asyncio.Lock()
 
-    # Acquire the lock for this collection to ensure thread safety
+    # スレッドセーフを確保するためにこのコレクションのロックを取得
     async with _collection_locks[collection_name]:
         milvus_client = get_milvus_client()
 
@@ -24,3 +24,5 @@ async def load_collection(
             milvus_client.load_collection(
                 collection_name=collection_name, timeout=timeout, **kwargs
             )
+    # 成功した完了を示すためにTrueを返す
+    return True

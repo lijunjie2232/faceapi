@@ -1,8 +1,8 @@
 """
-Face service module for the Face Recognition System.
+顔認識システムの顔サービスモジュール。
 
-This module contains business logic for face recognition operations
-including face verification and embedding updates.
+このモジュールは顔検証と埋め込み更新を含む
+顔認識操作のビジネスロジックを含みます。
 """
 
 import time
@@ -28,18 +28,18 @@ from ..utils import (
 
 async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
     """
-    Service function to verify a face from uploaded image.
+    アップロードされた画像から顔を検証するサービス関数。
 
-    Args:
-        image: Uploaded image file containing a face
+    引数:
+        image: 顔を含むアップロードされた画像ファイル
 
-    Returns:
-        Dictionary containing recognition result and token if successful
+    戻り値:
+        認識結果と成功時のトークンを含む辞書
     """
-    # Read image file
+    # 画像ファイルを読み込み
     contents = await image.read()
 
-    # Convert to numpy array
+    # numpy配列に変換
     nparr = np.frombuffer(contents, np.uint8)
     # pylint: disable=no-member
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -48,7 +48,7 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image file")
 
-    # Detect faces in the image
+    # 画像内の顔を検出
     detected_faces = detect_face(img)
 
     if not detected_faces:
@@ -62,22 +62,22 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
             "code": 400,
         }
 
-    # Extract features from the face
+    # 顔から特徴を抽出
     features = [
         inference(model, face_img, device=_CONFIG_.MODEL_DEVICE).reshape(512)
         for face_img in detected_faces
     ]
 
-    # Get the shared Milvus client
+    # 共有Milvusクライアントを取得
     milvus_client = get_milvus_client()
 
     await load_collection(FACE_FEATURES_COLLECTION)
 
-    # Search for similar faces in the collection
+    # コレクション内で類似の顔を検索
     search_results = milvus_client.search(
         collection_name=FACE_FEATURES_COLLECTION,
         data=features,
-        limit=1,  # Only need the closest match
+        limit=1,  # 最も近い一致のみ必要
         output_fields=["user_id"],
         search_params={
             "metric_type": "COSINE",
@@ -85,7 +85,7 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         },
     )
     if not any(search_results):
-        # No matching face found
+        # 一致する顔が見つからない
         return {
             "recognized": False,
             "message": "Face not recognized in the database",
@@ -96,14 +96,14 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
             "code": 401,
         }
 
-    # Get the best match
+    # 最良の一致を取得
     # best_match = search_results[0][0]
     best_match = list(filter(lambda l: len(l) > 0, search_results))[0][0]
 
-    # Face recognized, get user info and create token
+    # 顔が認識され、ユーザー情報を取得しトークンを作成
     user_id = best_match["entity"]["user_id"]
 
-    # Create access token
+    # アクセストークンを作成
     access_token = create_access_token(
         data={"sub": str(user_id)},
     )
@@ -112,7 +112,7 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         "recognized": True,
         "message": f"Face recognized as user(id={user_id})",
         "user_id": user_id,
-        "confidence": 1 - best_match["distance"],  # Convert distance to similarity
+        "confidence": 1 - best_match["distance"],  # 距離を類似度に変換
         "data": {
             "token": access_token,
             "token_type": "Bearer",
@@ -125,19 +125,19 @@ async def update_face_embedding_service(
     user_id: int, image: UploadFile
 ) -> Dict[str, Any]:
     """
-    Service function to update the face embedding for a user.
+    ユーザーの顔埋め込みを更新するサービス関数。
 
-    Args:
-        user_id: ID of the user whose face embedding to update
-        image: Uploaded image file containing the new face
+    引数:
+        user_id: 顔埋め込みを更新するユーザーのID
+        image: 新しい顔を含むアップロードされた画像ファイル
 
-    Returns:
-        Dictionary containing success message and embedding ID
+    戻り値:
+        成功メッセージと埋め込みIDを含む辞書
     """
-    # Read image file
+    # 画像ファイルを読み込み
     contents = await image.read()
 
-    # Convert to numpy array
+    # numpy配列に変換
     nparr = np.frombuffer(contents, np.uint8)
     # pylint: disable=no-member
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
@@ -146,12 +146,12 @@ async def update_face_embedding_service(
     if img is None:
         raise HTTPException(status_code=400, detail="Invalid image file")
 
-    # Get user object
+    # ユーザーオブジェクトを取得
     user = await UserModel.get_or_none(id=user_id)
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    # Detect faces in the image
+    # 画像内の顔を検出
     detected_faces = detect_face(img)
 
     if not detected_faces:
@@ -163,22 +163,22 @@ async def update_face_embedding_service(
             detail="Multiple faces detected. Please upload an image with only one face.",
         )
 
-    # Process the first detected face
+    # 最初に検出された顔を処理
     face_img = detected_faces[0]
 
-    # Extract features from the face
+    # 顔から特徴を抽出
     features = inference(model, face_img, device=_CONFIG_.MODEL_DEVICE)
 
-    # Get the shared Milvus client
+    # 共有Milvusクライアントを取得
     milvus_client = get_milvus_client()
 
     await load_collection(FACE_FEATURES_COLLECTION)
 
-    # Search for similar faces in the collection
+    # コレクション内で類似の顔を検索
     search_results = milvus_client.search(
         collection_name=FACE_FEATURES_COLLECTION,
         data=features,
-        limit=1,  # Only need the closest match
+        limit=1,  # 最も近い一致のみ必要
         output_fields=["user_id"],
         search_params={
             "metric_type": "COSINE",
@@ -191,12 +191,12 @@ async def update_face_embedding_service(
             detail="Face already exists in the database. Please use a different face or contact the administrator.",
         )
 
-    # Insert the new face feature into the collection
+    # 新しい顔特徴をコレクションに挿入
     entities = [
         {
             "user_id": user_id,
             "feature_vector": features[0].tolist(),
-            "update_at": int(time.time() * 1000),  # Convert to milliseconds since epoch
+            "update_at": int(time.time() * 1000),  # エポックからのミリ秒に変換
         }
     ]
 
@@ -204,10 +204,10 @@ async def update_face_embedding_service(
         collection_name=FACE_FEATURES_COLLECTION, data=entities
     )
 
-    # Handle potential response variations from Milvus client
+    # Milvusクライアントからの応答の可能性のあるバリエーションを処理
     inserted_id = None
     if isinstance(insert_result, dict):
-        # Check for different possible keys in the response
+        # 応答内の異なる可能なキーを確認
         if "insertedIds" in insert_result:
             inserted_id = (
                 insert_result["insertedIds"][0]
@@ -225,7 +225,7 @@ async def update_face_embedding_service(
             insert_result.inserted_ids[0] if insert_result.inserted_ids else None
         )
 
-    # update picture in bytes in sql
+    # SQLでバイト単位で画像を更新
     user.head_pic = image_to_base64(img)
     await user.save()
 

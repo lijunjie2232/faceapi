@@ -8,15 +8,15 @@ import torch
 
 class FaceDetector:
     """
-    A face detector based on OpenCV Haar cascades
+    OpenCV Haarカスケードに基づく顔検出器
     """
 
     def __init__(self):
-        # Handle case where cv2.data is not available
+        # cv2.dataが利用できない場合の処理
         try:
             cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
         except AttributeError:
-            # Fallback if cv2.data is not available
+            # cv2.dataが利用できない場合のフォールバック
             cascade_path = "haarcascade_frontalface_default.xml"
 
         # pylint: disable=no-member
@@ -25,7 +25,7 @@ class FaceDetector:
 
     def detect_from_array(self, image_array):
         """
-        Detect faces from a numpy array image
+        numpy配列画像から顔を検出
         """
         gray_image = cv2.cvtColor(image_array, cv2.COLOR_BGR2GRAY)
         faces = self.face_cascade.detectMultiScale(
@@ -34,33 +34,33 @@ class FaceDetector:
             minNeighbors=5,
             minSize=(30, 30),
         )
-        # Return cropped face images
+        # 切り取られた顔画像を返す
         return [image_array[y : y + h, x : x + w] for (x, y, w, h) in faces]
 
 
 def detect_face(image):
     """
-    Detect faces in an image using OpenCV Haar cascades.
+    OpenCV Haarカスケードを使用して画像内の顔を検出。
 
-    Args:
-        image: Can be either a file path (str) or a numpy array representing an image
+    引数:
+        image: ファイルパス（文字列）または画像を表すnumpy配列のいずれか
 
-    Returns:
-        List of numpy arrays representing detected faces, or empty list if no faces found
+    戻り値:
+        検出された顔を表すnumpy配列のリスト、または顔が見つからない場合は空リスト
     """
     face_cascade = cv2.CascadeClassifier(
         cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
     )
 
-    # Handle different input types
+    # 異なる入力タイプを処理
     if isinstance(image, str):
-        # If image is a file path
+        # 画像がファイルパスの場合
         image = cv2.imread(image, cv2.COLOR_BGR2RGB)
     elif isinstance(image, np.ndarray):
-        # If image is already a numpy array
+        # 画像が既にnumpy配列の場合
         pass
     else:
-        raise ValueError("Image must be a file path string or numpy array")
+        raise ValueError("画像はファイルパス文字列またはnumpy配列である必要があります")
 
     if image is None:
         return []
@@ -73,36 +73,36 @@ def detect_face(image):
         minSize=(30, 30),
     )
 
-    # Return cropped face images
+    # 切り取られた顔画像を返す
     return [image[y : y + h, x : x + w] for (x, y, w, h) in faces]
 
 
 def image_to_base64(image):
     """
-    Convert an image to base64 encoded string
+    画像をbase64エンコードされた文字列に変換
 
-    Args:
-        image: Can be either a file path (str), numpy array, or bytes representing an image
+    引数:
+        image: ファイルパス（文字列）、numpy配列、または画像を表すバイトのいずれか
 
-    Returns:
-        Base64 encoded string representation of the image
+    戻り値:
+        画像のBase64エンコードされた文字列表現
     """
     if isinstance(image, str):
-        # Read image from file
+        # ファイルから画像を読み込み
         image_data = cv2.imread(image)
         _, buffer = cv2.imencode(".jpg", image_data)
         image_bytes = buffer.tobytes()
     elif isinstance(image, np.ndarray):
-        # Convert numpy array to bytes
+        # numpy配列をバイトに変換
         _, buffer = cv2.imencode(".jpg", image)
         image_bytes = buffer.tobytes()
     elif isinstance(image, bytes):
-        # Image is already bytes
+        # 画像が既にバイトの場合
         image_bytes = image
     else:
-        raise ValueError("Image must be a file path string, numpy array, or bytes")
+        raise ValueError("画像はファイルパス文字列、numpy配列、またはバイトである必要があります")
 
-    # Encode bytes to base64
+    # バイトをbase64にエンコード
     base64_string = base64.b64encode(image_bytes).decode("utf-8")
 
     return base64_string
@@ -110,21 +110,21 @@ def image_to_base64(image):
 
 def base64_to_image(base64_string: str):
     """
-    Convert a base64 encoded string to an image (numpy array)
+    base64エンコードされた文字列を画像（numpy配列）に変換
 
-    Args:
-        base64_string: Base64 encoded string representing an image
+    引数:
+        base64_string: 画像を表すBase64エンコードされた文字列
 
-    Returns:
-        Numpy array representing the decoded image
+    戻り値:
+        デコードされた画像を表すnumpy配列
     """
-    # Decode base64 string to bytes
+    # base64文字列をバイトにデコード
     image_bytes = base64.b64decode(base64_string.encode("utf-8"))
 
-    # Convert bytes to numpy array
+    # バイトをnumpy配列に変換
     nparr = np.frombuffer(image_bytes, np.uint8)
 
-    # Decode numpy array to image
+    # numpy配列を画像にデコード
     image = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
 
     return image
@@ -142,7 +142,7 @@ def inference(net, img, device="cuda", to_array=True):
     img = torch.from_numpy(img).unsqueeze(0).float()
     img.div_(255).sub_(0.5).div_(0.5)
     # net.eval()
-    # inference in amp mode
+    # ampモードで推論
     img = img.to(device)
     net = net.to(device)
     feat = net(img, cuda=use_cuda)

@@ -18,11 +18,13 @@ class BaseResponse(BaseModel):
     Attributes:
         success: Boolean indicating if the request was successful
         message: Human-readable message describing the result
+        code: Status code for the response
         timestamp: Timestamp of when the response was generated
     """
 
     success: bool
     message: str
+    code: int = 200
     timestamp: datetime = datetime.now()
 
 

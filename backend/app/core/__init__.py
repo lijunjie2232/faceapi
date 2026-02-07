@@ -1,9 +1,9 @@
 """
-Core module for the Face Recognition System.
+顔認識システムのコアモジュール。
 
-This module initializes the configuration and logger for the application.
-It loads the configuration settings and makes them available throughout
-the application via the _CONFIG_ object.
+このモジュールはアプリケーションの設定とロガーを初期化します。
+設定を読み込み、_CONFIG_オブジェクトを介してアプリケーション全体で
+利用できるようにします。
 """
 
 from loguru import logger

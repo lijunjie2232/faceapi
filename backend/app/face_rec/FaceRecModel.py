@@ -1,6 +1,6 @@
 class FaceRecModel:
     """
-    A registry to manage model classes and provide instances of registered models.
+    モデルクラスを管理し、登録されたモデルのインスタンスを提供するレジストリ。
     """
 
     _models = {}
@@ -8,13 +8,13 @@ class FaceRecModel:
     @classmethod
     def register(cls, name):
         """
-        Decorator to register a model class with a given name.
+        指定された名前でモデルクラスを登録するデコレータ。
 
-        Args:
-            name (str): Name to register the model under
+        引数:
+            name (str): モデルを登録する名前
 
-        Returns:
-            function: Decorator function
+        戻り値:
+            function: デコレータ関数
         """
 
         def decorator(model_class):
@@ -27,21 +27,21 @@ class FaceRecModel:
     @classmethod
     def get_model(cls, name, *args, **kwargs):
         """
-        Get an instance of a registered model.
+        登録されたモデルのインスタンスを取得。
 
-        Args:
-            name (str): Name of the model to instantiate
-            *args: Arguments to pass to the model constructor
-            **kwargs: Keyword arguments to pass to the model constructor
+        引数:
+            name (str): インスタンス化するモデルの名前
+            *args: モデルコンストラクタに渡す引数
+            **kwargs: モデルコンストラクタに渡すキーワード引数
 
-        Returns:
-            object: Instance of the requested model
+        戻り値:
+            object: 要求されたモデルのインスタンス
 
-        Raises:
-            ValueError: If the model name is not registered
+        例外:
+            ValueError: モデル名が登録されていない場合
         """
         if name not in cls._models:
-            raise ValueError(f"Model '{name}' is not registered.")
+            raise ValueError(f"モデル '{name}' は登録されていません。")
 
         model_class = cls._models[name]
         return model_class(*args, **kwargs)
@@ -49,28 +49,28 @@ class FaceRecModel:
     @classmethod
     def list_models(cls):
         """
-        List all registered model names.
+        登録されたすべてのモデル名をリスト表示。
 
-        Returns:
-            list: List of registered model names
+        戻り値:
+            list: 登録されたモデル名のリスト
         """
         return list(cls._models.keys())
 
     @classmethod
     def has_model(cls, name):
         """
-        Check if a model is registered.
+        モデルが登録されているか確認。
 
-        Args:
-            name (str): Name of the model to check
+        引数:
+            name (str): 確認するモデルの名前
 
-        Returns:
-            bool: True if the model is registered, False otherwise
+        戻り値:
+            bool: モデルが登録されている場合はTrue、それ以外はFalse
         """
         return name in cls._models
 
 
-# Create convenient functions for external usage
+# 外部使用のための便利な関数を作成
 register_model = FaceRecModel.register
 get_model = FaceRecModel.get_model
 list_models = FaceRecModel.list_models

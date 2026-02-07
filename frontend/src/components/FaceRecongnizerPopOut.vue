@@ -1,5 +1,5 @@
 <template>
-  <el-dialog v-model="dialogVisible" title="Face Recognition" width="700px" :before-close="handleClose"
+  <el-dialog v-model="dialogVisible" title="顔認識" width="700px" :before-close="handleClose"
     class="face-detection-popout">
     <div class="camera-controls">
       <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" :disabled="!isCameraOpen"
@@ -7,7 +7,7 @@
         <el-icon>
           <Switch />
         </el-icon>
-        <span>{{ flipEnabled ? 'Flip Enabled' : 'Flip Disabled' }}</span>
+        <span>{{ flipEnabled ? '反転有効' : '反転無効' }}</span>
       </el-button>
     </div>
 
@@ -24,7 +24,7 @@
     </div>
 
     <div v-if="!isCameraOpen && !loadingModels" class="placeholder-container">
-      <el-empty description="Camera is not active" :image-size="150">
+      <el-empty description="カメラがアクティブではありません" :image-size="150">
         <p>カメラを自動的に起動中...</p>
       </el-empty>
     </div>

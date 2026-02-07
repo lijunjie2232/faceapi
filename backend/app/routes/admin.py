@@ -1,39 +1,39 @@
 """
-Admin routes module for the Face Recognition System.
+顔認識システムの管理者ルートモジュール。
 
-This module defines the administrative API endpoints for managing users,
-including listing, creating, updating, and deleting user accounts.
+このモジュールはユーザーのリスト表示、作成、更新、削除を含む
+ユーザー管理の管理APIエンドポイントを定義します。
 """
 
 import logging
 from traceback import print_exc
-from typing import Union
+from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from tortoise.transactions import atomic
 
+from ..models import UserModel
 from ..schemas import (
+    BatchOperationRequest,
+    BatchOperationResult,
     DataResponse,
     ListResponse,
     User,
     UserCreateAsAdmin,
     UserUpdateAsAdmin,
-    BatchOperationRequest,
-    BatchOperationResult,
 )
 from ..services import (
-    create_user_as_admin_service,
-    get_user_service,
-    list_users_service,
-    update_user_as_admin_service,
-    validate_user_update_uniqueness,
-    update_face_embedding_service,
-    batch_reset_password_service,
     batch_activate_users_service,
     batch_deactivate_users_service,
     batch_reset_face_data_service,
+    batch_reset_password_service,
+    create_user_as_admin_service,
+    get_user_service,
+    list_users_service,
+    update_face_embedding_service,
+    update_user_as_admin_service,
+    validate_user_update_uniqueness,
 )
-from ..models import UserModel
 from ..utils import get_current_admin_user
 
 router = APIRouter(
@@ -51,15 +51,31 @@ logger = logging.getLogger(__name__)
 async def list_all_users(
     skip: int = 0,
     limit: int = 100,
+    username: Optional[str] = None,
+    email: Optional[str] = None,
+    full_name: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    is_admin: Optional[bool] = None,
+    set_face: Optional[bool] = None,
 ):
-    """Admin endpoint to list all users with pagination"""
+    """ページネーションとオプションフィルターで全ユーザーをリスト表示する管理者エンドポイント"""
     try:
         limit = min(100, max(limit, 1))
-        users, count = await list_users_service(skip, limit)
+        users, count = await list_users_service(
+            skip,
+            limit,
+            username,
+            email,
+            full_name,
+            is_active,
+            is_admin,
+            set_face,
+        )
 
         return ListResponse[User](
             success=True,
             message="Users retrieved successfully",
+            code=200,
             data=users,
             total=count,
             page=(skip // limit) + 1 if limit > 0 else 1,
@@ -80,7 +96,7 @@ async def list_all_users(
 async def get_user_by_id(
     user_id: int,
 ):
-    """Admin endpoint to get a specific user by ID"""
+    """IDで特定のユーザーを取得する管理者エンドポイント"""
     try:
         user = await get_user_service(id=user_id)
         if not user:
@@ -101,6 +117,7 @@ async def get_user_by_id(
         return DataResponse[User](
             success=True,
             message="User retrieved successfully",
+            code=200,
             data=user_response,
         )
     except HTTPException:
@@ -120,9 +137,9 @@ async def get_user_by_id(
 async def create_user_as_admin(
     user_create: UserCreateAsAdmin,
 ):
-    """Admin endpoint to create a new user"""
+    """新しいユーザーを作成する管理者エンドポイント"""
     try:
-        # Check if user already exists
+        # ユーザーが既に存在するか確認
         existing_user = await get_user_service(username=user_create.username)
         if existing_user:
             raise HTTPException(
@@ -137,10 +154,10 @@ async def create_user_as_admin(
                 detail="Email already registered",
             )
 
-        # Create the user via service
+        # サービス経由でユーザーを作成
         created_user = await create_user_as_admin_service(user_create)
 
-        # Convert to response format
+        # レスポンス形式に変換
         user_response = User(
             id=created_user.id,
             username=created_user.username,
@@ -156,6 +173,7 @@ async def create_user_as_admin(
         return DataResponse[User](
             success=True,
             message="User created successfully",
+            code=200,
             data=user_response,
         )
     except HTTPException:
@@ -177,24 +195,24 @@ async def update_user_as_admin(
     user_update: UserUpdateAsAdmin,
     current_admin: UserModel = Depends(get_current_admin_user),
 ):
-    """Admin endpoint to update a specific user by ID"""
+    """IDで特定のユーザーを更新する管理者エンドポイント"""
     try:
-        # Get the user to check if it exists
+        # ユーザーを取得して存在を確認
         user = await get_user_service(id=user_id)
         if not user:
             raise HTTPException(status_code=404, detail="User not found")
 
         if user_id == current_admin.id:
-            # even though the current user is admin, self-active/inactive is not allowed
+            # 現在のユーザーが管理者であっても、自分自身のアクティブ/非アクティブ変更は許可されません
             if user_update.is_active is not None:
                 raise HTTPException(status_code=400, detail="Cannot change own status")
 
-        # Validate uniqueness of username and email
+        # ユーザー名とメールアドレスの一意性を検証
         validation_error = await validate_user_update_uniqueness(user_id, user_update)
         if validation_error:
             raise HTTPException(status_code=400, detail=validation_error)
 
-        # Update the user via service
+        # サービス経由でユーザーを更新
         updated_user = await update_user_as_admin_service(user_id, user_update)
 
         user_response = User(
@@ -210,7 +228,10 @@ async def update_user_as_admin(
         )
 
         return DataResponse[User](
-            success=True, message="User updated successfully", data=user_response
+            success=True,
+            message="User updated successfully",
+            code=200,
+            data=user_response,
         )
     except HTTPException:
         raise
@@ -233,23 +254,23 @@ async def batch_operation(
     current_admin: UserModel = Depends(get_current_admin_user),
 ):
     """
-    Admin endpoint to perform batch operations on multiple users.
+    複数のユーザーに対してバッチ操作を実行する管理者エンドポイント。
 
-    Supported operations:
-    - reset-password: Reset passwords to specified value
-    - active: Activate user accounts
-    - inactive: Deactivate user accounts
-    - reset-face: Reset face data to unset
+    サポートされる操作:
+    - reset-password: パスワードを指定した値にリセット
+    - active: ユーザーアカウントをアクティブ化
+    - inactive: ユーザーアカウントを非アクティブ化
+    - reset-face: 顔データを未設定にリセット
 
-    Args:
-        operation: The operation to perform
-        batch_request: Request containing user_ids and optional value
-        current_admin: Current admin user (dependency)
+    引数:
+        operation: 実行する操作
+        batch_request: user_idsとオプション値を含むリクエスト
+        current_admin: 現在の管理者ユーザー（依存関係）
 
-    Returns:
-        BatchOperationResult with success/failure statistics
+    戻り値:
+        成功/失敗統計を含むBatchOperationResult
     """
-    # Validate operation
+    # 操作を検証
     valid_operations = ["reset-password", "active", "inactive", "reset-face"]
     if operation not in valid_operations:
         raise HTTPException(
@@ -257,25 +278,31 @@ async def batch_operation(
             detail=f"Invalid operation. Valid operations are: {valid_operations}",
         )
 
-    # Validate user_ids
+    # user_idsを検証
     if not batch_request.user_ids:
         raise HTTPException(status_code=400, detail="user_ids list cannot be empty")
 
-    # Check for self-operation restrictions
+    # 自己操作制限を確認
     if current_admin.id in batch_request.user_ids:
         raise HTTPException(
             status_code=400, detail="Cannot inclued your own account in batch operation"
         )
 
-    # Validate value requirement
+    # 値の要件を検証
     if operation == "reset-password" and not batch_request.value:
         raise HTTPException(
             status_code=400, detail="Value is required for reset-password operation"
         )
 
     try:
-        # Perform the requested operation
+        # 要求された操作を実行
         if operation == "reset-password":
+            # reset-password操作のために値が存在することを検証済み
+            if not batch_request.value:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Value is required for reset-password operation",
+                )
             result = await batch_reset_password_service(
                 batch_request.user_ids, batch_request.value
             )
@@ -286,13 +313,15 @@ async def batch_operation(
         elif operation == "reset-face":
             result = await batch_reset_face_data_service(batch_request.user_ids)
         else:
-            # This shouldn't happen due to validation above, but added for completeness
+            # 上記の検証により発生すべきではないが、完全性のために追加
             raise HTTPException(status_code=500, detail="Unsupported operation")
 
         return DataResponse[BatchOperationResult](
-            success=True, message=f"Batch {operation} operation completed", data=result
+            success=True,
+            message=f"Batch {operation} operation completed",
+            code=200,
+            data=result,
         )
-
     except HTTPException:
         raise
     except Exception as e:
@@ -302,7 +331,7 @@ async def batch_operation(
         ) from e
 
 
-# update the face of any user as admin
+# 管理者として任意のユーザーの顔を更新
 @atomic()
 @router.put(
     "/face/{user_id}",
@@ -313,16 +342,16 @@ async def update_face_embedding_as_admin(
     image: UploadFile = File(...),
 ):
     """
-    Update the face embedding for the specified user as an admin.
-    This endpoint allows an admin to update the face embedding for a specific user.
-    It uses the existing face embedding service but adds admin-level validation and error handling.
+    指定されたユーザーの顔埋め込みを管理者として更新。
+    このエンドポイントにより管理者は特定のユーザーの顔埋め込みを更新できます。
+    既存の顔埋め込みサービスを使用しますが、管理者レベルの検証とエラー処理を追加します。
 
-    Args:
-        user_id (int): The ID of the user whose face embedding to update
-        image (UploadFile): The uploaded image containing the user's face
+    引数:
+        user_id (int): 顔埋め込みを更新するユーザーのID
+        image (UploadFile): ユーザーの顔を含むアップロードされた画像
 
-    Returns:
-        Success message indicating the embedding was updated
+    戻り値:
+        埋め込みが更新されたことを示す成功メッセージ
     """
     try:
         result = await update_face_embedding_service(user_id, image)
@@ -331,5 +360,5 @@ async def update_face_embedding_as_admin(
         raise
     except Exception as e:
         print_exc()
-        logger.error("Error in face embedding update: %s", str(e))
+        logger.error("顔埋め込み更新エラー: %s", str(e))
         raise e

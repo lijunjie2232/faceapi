@@ -1,8 +1,8 @@
 """
-Database initialization module for Milvus.
+Milvus用データベース初期化モジュール。
 
-This module handles the initialization and setup of Milvus vector database
-for storing and retrieving face feature vectors.
+このモジュールは顔特徴ベクトルの保存と取得のための
+Milvusベクトルデータベースの初期化とセットアップを処理します。
 """
 
 from loguru import logger
@@ -18,20 +18,20 @@ from pymilvus import (
 
 from ..core import _CONFIG_
 
-# Define collection names
+# コレクション名を定義
 FACE_FEATURES_COLLECTION = "face_features"
 USER_ACCOUNTS_COLLECTION = "user_accounts"
 
-# Global Milvus client instance
+# グローバルMilvusクライアントインスタンス
 MILVUS_CLIENT = None
 
 
 async def init_db():
-    """Initialize database connections and create collections if they don't exist"""
+    """データベース接続を初期化し、存在しない場合はコレクションを作成"""
     global MILVUS_CLIENT
 
     try:
-        # First connect without database to create the database if it doesn't exist
+        # 最初にデータベースなしで接続し、存在しない場合はデータベースを作成
         connections.connect(
             alias="default",
             host=_CONFIG_.MILVUS_HOST,
@@ -40,22 +40,22 @@ async def init_db():
             password=_CONFIG_.MILVUS_PASSWORD,
         )
 
-        # Create the database if it doesn't exist
+        # 存在しない場合はデータベースを作成
         temp_client = MilvusClient(
             uri=f"http://{_CONFIG_.MILVUS_HOST}:{_CONFIG_.MILVUS_PORT}",
             user=_CONFIG_.MILVUS_USER,
             password=_CONFIG_.MILVUS_PASSWORD,
         )
 
-        # Check if database exists, if not create it
+        # データベースが存在するか確認し、存在しない場合は作成
         existing_dbs = temp_client.list_databases()
         if _CONFIG_.MILVUS_DB_NAME not in existing_dbs:
             logger.info(
-                f"Database {_CONFIG_.MILVUS_DB_NAME} does not exist, creating it..."
+                f"データベース {_CONFIG_.MILVUS_DB_NAME} が存在しないため、作成しています..."
             )
             temp_client.create_database(_CONFIG_.MILVUS_DB_NAME)
 
-        # Now connect to the specific database
+        # 特定のデータベースに接続
         connections.disconnect("default")
         connections.connect(
             alias="default",
@@ -66,7 +66,7 @@ async def init_db():
             db_name=_CONFIG_.MILVUS_DB_NAME,
         )
 
-        # Initialize the global Milvus client connected to the specific database
+        # 特定のデータベースに接続されたグローバルMilvusクライアントを初期化
         MILVUS_CLIENT = MilvusClient(
             uri=f"http://{_CONFIG_.MILVUS_HOST}:{_CONFIG_.MILVUS_PORT}",
             user=_CONFIG_.MILVUS_USER,
@@ -74,23 +74,23 @@ async def init_db():
             db_name=_CONFIG_.MILVUS_DB_NAME,
         )
 
-        logger.info("Connected to Milvus successfully")
+        logger.info("Milvusへの接続に成功しました")
 
-        # Create face features collection if it doesn't exist
+        # 存在しない場合は顔特徴コレクションを作成
         await create_face_features_collection()
 
     except Exception as e:
-        logger.error(f"Error initializing database: {e}")
+        logger.error(f"データベース初期化エラー: {e}")
         raise
 
 
 async def create_face_features_collection():
-    """Create the face features collection in Milvus"""
+    """Milvusに顔特徴コレクションを作成"""
     if utility.has_collection(FACE_FEATURES_COLLECTION):
-        logger.info(f"Collection {FACE_FEATURES_COLLECTION} already exists")
+        logger.info(f"コレクション {FACE_FEATURES_COLLECTION} は既に存在します")
         return
 
-    # Define the schema for storing face features
+    # 顔特徴を保存するためのスキーマを定義
     fields = [
         FieldSchema(
             name="user_id",
@@ -100,8 +100,8 @@ async def create_face_features_collection():
         FieldSchema(
             name="feature_vector",
             dtype=DataType.FLOAT_VECTOR,
-            dim=512,
-        ),  # Assuming 512-dim face encoding
+            dim=_CONFIG_.MODEL_EMB_DIM,
+        ),  # モデルの顔エンコーディング次元
         FieldSchema(
             name="update_at",
             dtype=DataType.INT64,
@@ -109,30 +109,30 @@ async def create_face_features_collection():
     ]
 
     schema = CollectionSchema(
-        fields=fields, description="Face feature vectors for recognition"
+        fields=fields, description="認識用の顔特徴ベクトル"
     )
 
     face_features_collection = Collection(name=FACE_FEATURES_COLLECTION, schema=schema)
 
-    # Create index for the feature vector field
+    # 特徴ベクトルフィールドのインデックスを作成
     index_params = {
         "index_type": "FLAT",
         "metric_type": "COSINE",
     }
 
-    # Create index - this is a synchronous operation in pymilvus
+    # インデックスを作成 - これはpymilvusでの同期操作です
     await face_features_collection.create_index(
         field_name="feature_vector",
         index_params=index_params,
     )
 
-    logger.info(f"Created collection {FACE_FEATURES_COLLECTION}")
+    logger.info(f"コレクション {FACE_FEATURES_COLLECTION} を作成しました")
 
     return face_features_collection
 
 
 def get_milvus_client():
-    """Return the global Milvus client instance"""
+    """グローバルMilvusクライアントインスタンスを返す"""
     if MILVUS_CLIENT is None:
-        raise RuntimeError("Milvus client not initialized. Call init_db() first.")
+        raise RuntimeError("Milvusクライアントが初期化されていません。まずinit_db()を呼び出してください。")
     return MILVUS_CLIENT

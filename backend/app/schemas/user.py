@@ -4,7 +4,7 @@ This module contains Pydantic models for user creation, update, and representati
 """
 
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
 
 from pydantic import BaseModel, EmailStr
 
@@ -183,12 +183,12 @@ class UserUpdatePydantic(BaseModel):
 class BatchOperationRequest(BaseModel):
     """
     Schema for batch operation requests.
-    
+
     Attributes:
         user_ids: List of user IDs to perform the operation on
         value: Optional value for operations that require it (e.g., new password for reset-password)
     """
-    
+
     user_ids: List[int]
     value: Optional[str] = None
 
@@ -196,7 +196,7 @@ class BatchOperationRequest(BaseModel):
 class BatchOperationResult(BaseModel):
     """
     Schema for batch operation results.
-    
+
     Attributes:
         success_count: Number of successfully processed users
         failed_count: Number of users that failed processing
@@ -204,7 +204,7 @@ class BatchOperationResult(BaseModel):
         failed_users: List of user IDs that failed processing
         operation: The operation that was performed
     """
-    
+
     success_count: int
     failed_count: int
     total_count: int

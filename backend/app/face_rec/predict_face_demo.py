@@ -9,14 +9,14 @@ import yaml
 from pymilvus import DataType, MilvusClient
 from StarNet import faceDetector, get_s3, inference
 
-# Default device and model configuration
+# デフォルトのデバイスとモデル設定
 DEVICE = "cuda:0" if torch.cuda.is_available() else "cpu"
 MODEL_PATH = "g_m3.pt"
 
 
 def load_milvus_config(config_path="milvus_config.yaml"):
     """
-    Load Milvus configuration from YAML file
+    YAMLファイルからMilvus設定を読み込み
     """
     with open(config_path, "r") as file:
         config = yaml.safe_load(file)
@@ -25,20 +25,20 @@ def load_milvus_config(config_path="milvus_config.yaml"):
 
 def load_model(get_sn: Callable, model_path: Path, device: str | torch.device):
     """
-    Load the face recognition model and initialize the Milvus client
+    顔認識モデルを読み込み、Milvusクライアントを初期化
     """
-    # Load the model
+    # モデルを読み込み
     return get_sn(model_path).eval().to(device)
 
 
 def init_milvus(client):
     """
-    init Milvus
+    Milvusを初期化
     """
-    # Load Milvus configuration from YAML
+    # YAMLからMilvus設定を読み込み
     config = load_milvus_config()
 
-    # Initialize Milvus client
+    # Milvusクライアントを初期化
     client = MilvusClient(
         uri=config["uri"],
         token=config["token"],
@@ -49,21 +49,21 @@ def init_milvus(client):
 
     client.use_database("test")
 
-    # Check if collection exists, if not create it
+    # コレクションが存在するか確認し、存在しない場合は作成
     if not client.has_collection("experiment"):
         create_collection(client)
 
-    # Load the collection
+    # コレクションをロード
     client.load_collection("experiment")
 
-    # Create schema
+    # スキーマを作成
     schema = MilvusClient.create_schema()
     schema.add_field("id", DataType.INT64, is_primary=True, auto_id=True)
     schema.add_field("vector", DataType.FLOAT_VECTOR, dim=512)
     schema.add_field("user_id", DataType.INT64)
     schema.add_field("user_name", DataType.VARCHAR, max_length=200)
 
-    # Create collection
+    # コレクションを作成
     client.create_collection(
         collection_name="experiment",
         dimension=512,
@@ -71,10 +71,10 @@ def init_milvus(client):
         schema=schema,
     )
 
-    # Set up the index parameters
+    # インデックスパラメータを設定
     index_params = MilvusClient.prepare_index_params()
 
-    # Add an index on the vector field.
+    # ベクトルフィールドにインデックスを追加
     index_params.add_index(
         field_name="vector",
         metric_type="COSINE",
@@ -82,7 +82,7 @@ def init_milvus(client):
         index_name="vector_index",
     )
 
-    # Create an index file
+    # インデックスファイルを作成
     client.create_index(
         collection_name="experiment",
         index_params=index_params,
@@ -90,38 +90,38 @@ def init_milvus(client):
     )
 
     client.flush("experiment")
-    print("Created new collection for face recognition")
+    print("顔認識用の新しいコレクションを作成しました")
 
 
 def add_user_to_database(image_path, user_name, user_id, model, client, device):
     """
-    Adds a new user to the face recognition database.
+    顔認識データベースに新しいユーザーを追加。
 
-    Args:
-        image_path: Path to the image file of the user
-        user_name: Name of the user
-        user_id: Unique ID for the user
-        model: Loaded face recognition model
-        client: Milvus client instance
-        device: Computing device
+    引数:
+        image_path: ユーザーの画像ファイルへのパス
+        user_name: ユーザー名
+        user_id: ユーザーの一意のID
+        model: 読み込まれた顔認識モデル
+        client: Milvusクライアントインスタンス
+        device: 計算デバイス
 
-    Returns:
-        bool: True if user was added successfully, False otherwise
+    戻り値:
+        bool: ユーザーが正常に追加された場合はTrue、それ以外はFalse
     """
     face_detector = faceDetector()
 
-    # Detect face in the image
+    # 画像内の顔を検出
     detected_faces = face_detector(image_path)
 
     if not detected_faces:
-        print(f"Error: No face detected in the image: {image_path}")
+        print(f"エラー: 画像内に顔が検出されませんでした: {image_path}")
         return False
 
-    # Extract features from the detected face
+    # 検出された顔から特徴を抽出
     face_img = detected_faces[0]
     features = inference(model, face_img, device=device)
 
-    # Insert into database
+    # データベースに挿入
     entities = [
         {
             "vector": features[0].tolist(),
@@ -133,10 +133,10 @@ def add_user_to_database(image_path, user_name, user_id, model, client, device):
     try:
         insert_result = client.insert(collection_name="experiment", data=entities)
         client.flush("experiment")
-        print(f"Successfully added user '{user_name}' (ID: {user_id}) to the database")
+        print(f"ユーザー '{user_name}' (ID: {user_id}) をデータベースに正常に追加しました")
         return True
     except Exception as e:
-        print(f"Error inserting user into database: {e}")
+        print(f"データベースへのユーザー挿入エラー: {e}")
         return False
 
 
@@ -144,21 +144,21 @@ def predict_face_identity(
     image_path, model, client: MilvusClient, device, threshold=0.7
 ):
     """
-    Predicts face identity by extracting features from an image and searching for similar faces in the Milvus database.
+    画像から特徴を抽出し、Milvusデータベース内で類似の顔を検索することで顔の身元を予測。
 
-    Args:
-        image_path: Path to the image file
-        model: Loaded face recognition model
-        client: Milvus client instance
-        device: Computing device
-        threshold: Confidence threshold for face recognition
+    引数:
+        image_path: 画像ファイルへのパス
+        model: 読み込まれた顔認識モデル
+        client: Milvusクライアントインスタンス
+        device: 計算デバイス
+        threshold: 顔認識の信頼度閾値
 
-    Returns:
-        dict: Contains whether face was found, identity and confidence score
+    戻り値:
+        dict: 顔が見つかったかどうか、身元、信頼度スコアを含む
     """
     face_detector = faceDetector()
 
-    # Detect face in the image
+    # 画像内の顔を検出
     detected_faces = face_detector(image_path)
 
     if not detected_faces:
@@ -167,16 +167,16 @@ def predict_face_identity(
             "found": False,
             "identity": None,
             "confidence": 0.0,
-            "message": "No face detected in the image",
+            "message": "画像内に顔が検出されませんでした",
         }
 
-    # Extract features from the detected face
+    # 検出された顔から特徴を抽出
     from StarNet import inference
 
     face_img = detected_faces[0]
     features = inference(model, face_img, device=device)
 
-    # Search in Milvus database for similar faces
+    # Milvusデータベース内で類似の顔を検索
     search_result = client.search(
         collection_name="experiment",
         anns_field="vector",
@@ -185,7 +185,7 @@ def predict_face_identity(
         output_fields=["user_id", "user_name"],
         search_params={
             "params": {
-                "radius": threshold,  # Using the threshold as radius for search
+                "radius": threshold,  # 検索の半径として閾値を使用
             },
         },
     )
@@ -196,12 +196,12 @@ def predict_face_identity(
             "found": False,
             "identity": None,
             "confidence": 0.0,
-            "message": "No similar face found in the database",
+            "message": "データベース内に類似の顔が見つかりませんでした",
         }
 
-    # Get the top match
+    # 最上位の一致を取得
     top_match = search_result[0][0]
-    similarity_score = top_match.distance  # Convert distance to similarity
+    similarity_score = top_match.distance  # 距離を類似度に変換
     user_id = top_match.entity.get("user_id")
     user_name = top_match.entity.get("user_name")
     return {
@@ -209,75 +209,75 @@ def predict_face_identity(
         "found": True,
         "identity": {"user_id": user_id, "user_name": user_name},
         "confidence": similarity_score,
-        "message": f"Face found in database. Identity: {user_name} (ID: {user_id})",
+        "message": f"データベース内で顔が見つかりました。身元: {user_name} (ID: {user_id})",
     }
 
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Add user to database or predict face identity from an image"
+        description="データベースにユーザーを追加するか、画像から顔の身元を予測"
     )
-    parser.add_argument("image_path", type=str, help="Path to the image file")
+    parser.add_argument("image_path", type=str, help="画像ファイルへのパス")
 
-    # Mutually exclusive group for actions
+    # アクションの相互排他的グループ
     action_group = parser.add_mutually_exclusive_group(required=True)
     action_group.add_argument(
         "--predict",
         action="store_true",
-        help="Perform face recognition prediction (default behavior)",
+        help="顔認識予測を実行（デフォルト動作）",
     )
     action_group.add_argument(
         "--add-user",
         nargs=2,
         metavar=("USER_NAME", "USER_ID"),
-        help="Add a new user to the database (requires user name and user ID)",
+        help="データベースに新しいユーザーを追加（ユーザー名とユーザーIDが必要）",
     )
 
     parser.add_argument(
         "--threshold",
         type=float,
         default=0.2285,
-        help="Confidence threshold for recognition (default: 0.2285)",
+        help="認識の信頼度閾値（デフォルト: 0.2285）",
     )
     parser.add_argument(
         "--device",
         type=str,
         default=DEVICE,
-        help=f"Computing device (default: {DEVICE})",
+        help=f"計算デバイス（デフォルト: {DEVICE}）",
     )
 
     args = parser.parse_args()
 
-    # Validate image path
+    # 画像パスを検証
     img_path = Path(args.image_path)
     if not img_path.exists():
-        print(f"Error: Image file does not exist: {args.image_path}")
+        print(f"エラー: 画像ファイルが存在しません: {args.image_path}")
         return
 
-    # Load model and client
-    print("Loading model and connecting to database...")
+    # モデルとクライアントを読み込み
+    print("モデルを読み込み、データベースに接続しています...")
     try:
         model, client = load_model_and_client()
     except Exception as e:
-        print(f"Error loading model or connecting to database: {e}")
+        print(f"モデル読み込みまたはデータベース接続エラー: {e}")
         return
 
     if args.add_user:
-        # Add user to database
+        # データベースにユーザーを追加
         user_name, user_id_str = args.add_user
 
-        # Validate user ID is numeric
+        # ユーザーIDが数値であることを検証
         try:
             user_id = int(user_id_str)
         except ValueError:
-            print(f"Error: User ID must be a number, got: {user_id_str}")
+            print(f"エラー: ユーザーIDは数値である必要があります、入力: {user_id_str}")
             return
 
-        # Validate user name format
+        # ユーザー名の形式を検証
         if not re.match(r"^[A-Za-z0-9 _-]+$", user_name):
-            print(f"Error: User name contains invalid characters: {user_name}")
+            print(f"エラー: ユーザー名に無効な文字が含まれています: {user_name}")
             print(
-                "Only alphanumeric characters, spaces, hyphens, and underscores are allowed"
+                "英数字、スペース、ハイフン、アンダースコアのみが許可されています"
             )
             return
 
@@ -292,14 +292,14 @@ def main():
 
         if success:
             print(
-                f"User '{user_name}' (ID: {user_id}) successfully added to the database!"
+                f"ユーザー '{user_name}' (ID: {user_id}) がデータベースに正常に追加されました！"
             )
         else:
-            print("Failed to add user to database.")
+            print("データベースへのユーザー追加に失敗しました。")
 
-    elif args.predict or not (args.add_user):  # Default behavior is prediction
-        # Perform prediction
-        print(f"Analyzing face in image: {args.image_path}")
+    elif args.predict or not (args.add_user):  # デフォルト動作は予測
+        # 予測を実行
+        print(f"画像内の顔を分析しています: {args.image_path}")
         result = predict_face_identity(
             image_path=args.image_path,
             model=model,
@@ -308,16 +308,16 @@ def main():
             threshold=args.threshold,
         )
 
-        # Print results
-        print("\nPrediction Result:")
-        print(f"Success: {result['success']}")
-        print(f"Found in database: {result['found']}")
-        print(f"Confidence: {result['confidence']:.3f}")
-        print(f"Message: {result['message']}")
+        # 結果を出力
+        print("\n予測結果:")
+        print(f"成功: {result['success']}")
+        print(f"データベース内に見つかりました: {result['found']}")
+        print(f"信頼度: {result['confidence']:.3f}")
+        print(f"メッセージ: {result['message']}")
 
         if result["identity"]:
             identity = result["identity"]
-            print(f"Identity: {identity['user_name']} (ID: {identity['user_id']})")
+            print(f"身元: {identity['user_name']} (ID: {identity['user_id']})")
 
 
 if __name__ == "__main__":

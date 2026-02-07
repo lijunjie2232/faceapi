@@ -1,8 +1,8 @@
 """
-Models module for the Face Recognition System.
+顔認識システムのモデルモジュール。
 
-This module contains the database models for the application,
-including user account information and related data structures.
+このモジュールはアプリケーションのデータベースモデルを含み、
+ユーザーアカウント情報と関連するデータ構造が含まれます。
 """
 
 from .user import UserModel

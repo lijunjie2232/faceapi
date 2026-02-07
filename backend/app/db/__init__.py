@@ -1,8 +1,8 @@
 """
-Database module for the Face Recognition System.
+顔認識システムのデータベースモジュール。
 
-This module initializes and manages database connections for both
-Milvus (vector database for face features) and SQL databases.
+このモジュールは顔特徴用のベクトルデータベースであるMilvusと
+SQLデータベースの両方のデータベース接続を初期化および管理します。
 """
 
 from .init_milvus import FACE_FEATURES_COLLECTION, get_milvus_client

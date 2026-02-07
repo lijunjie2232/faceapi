@@ -1,7 +1,7 @@
-"""Main application module for Face Recognition System API.
+"""顔認識システムAPIのメインアプリケーションモジュール。
 
-This module initializes the FastAPI application, sets up the lifespan events,
-registers middleware, and includes all API routes for the face recognition system.
+このモジュールはFastAPIアプリケーションを初期化し、ライフスパンイベントを設定し、
+ミドルウェアを登録し、顔認識システムのすべてのAPIルートを含みます。
 """
 
 from contextlib import asynccontextmanager
@@ -18,17 +18,17 @@ from .routes import admin, face, user
 
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    """Lifespan event handler for startup and shutdown events"""
-    # Startup events
+    """起動およびシャットダウンイベントのライフスパンイベントハンドラ"""
+    # 起動イベント
     await init_milvus()
     await init_sql()
     yield
-    # Shutdown events (if any)
+    # シャットダウンイベント（もしあれば）
 
 
 app = FastAPI(
     title=_CONFIG_.PROJECT_NAME,
-    description="API for face recognition system with user management",
+    description="ユーザー管理機能付き顔認識システムのAPI",
     version="0.1.0",
     lifespan=lifespan,
 )
@@ -38,7 +38,7 @@ register_tortoise(
     config=TORTOISE_ORM,
 )
 
-# Add CORS middleware
+# CORSミドルウェアを追加
 app.add_middleware(
     CORSMiddleware,
     allow_origins=_CONFIG_.ALLOWED_ORIGINS,
@@ -50,17 +50,17 @@ app.add_middleware(
 
 @app.get("/")
 async def root():
-    """Root endpoint for health check"""
+    """ヘルスチェック用のルートエンドポイント"""
     return {"message": "Face Recognition System API"}
 
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """ヘルスチェックエンドポイント"""
     return {"status": "healthy"}
 
 
-# Include API routes using settings for prefix
+# 設定を使用してAPIルートを含める
 app.include_router(
     user,
     prefix=_CONFIG_.API_V1_STR,

@@ -1,57 +1,57 @@
 """
-Password utility module for encrypting and comparing passwords securely.
+パスワードを安全に暗号化および比較するためのパスワードユーティリティモジュール。
 """
 
 from typing import Union
 
 from passlib.context import CryptContext
 
-# Configure the password hashing context to use sha256_crypt
+# sha256_cryptを使用するようにパスワードハッシュコンテキストを設定
 pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
 
 
 def hash_password(password: str) -> str:
     """
-    Hash a plaintext password using sha256_crypt.
+    平文パスワードをsha256_cryptを使用してハッシュ化。
 
-    Args:
-        password: The plain text password to hash
+    引数:
+        password: ハッシュ化する平文パスワード
 
-    Returns:
-        The hashed password as a string
+    戻り値:
+        文字列としてのハッシュ化されたパスワード
     """
     return pwd_context.hash(password)
 
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
-    Verify a plain text password against a hashed password.
+    平文パスワードとハッシュ化されたパスワードを検証。
 
-    Args:
-        plain_password: The plain text password to verify
-        hashed_password: The hashed password to compare against
+    引数:
+        plain_password: 検証する平文パスワード
+        hashed_password: 比較対象のハッシュ化されたパスワード
 
-    Returns:
-        True if the passwords match, False otherwise
+    戻り値:
+        パスワードが一致する場合はTrue、それ以外はFalse
     """
     return pwd_context.verify(plain_password, hashed_password)
 
 
 def is_valid_password(password: str, min_length: int = 8) -> bool:
     """
-    Check if a password meets basic validation requirements.
+    パスワードが基本的な検証要件を満たしているか確認。
 
-    Args:
-        password: The password to validate
-        min_length: Minimum required length (default: 8)
+    引数:
+        password: 検証するパスワード
+        min_length: 最小必要な長さ（デフォルト: 8）
 
-    Returns:
-        True if the password is valid, False otherwise
+    戻り値:
+        パスワードが有効な場合はTrue、それ以外はFalse
     """
     if len(password) < min_length:
         return False
 
-    # Check if password contains at least one uppercase, lowercase, digit
+    # パスワードに少なくとも1つの大文字、小文字、数字が含まれているか確認
     has_upper = any(c.isupper() for c in password)
     has_lower = any(c.islower() for c in password)
     has_digit = any(c.isdigit() for c in password)
@@ -60,19 +60,19 @@ def is_valid_password(password: str, min_length: int = 8) -> bool:
 
 
 if __name__ == "__main__":
-    # Example usage
+    # 使用例
     EXAMPLE_PASSWORD = "MySecurePassword123"
 
-    print(f"Original password: {EXAMPLE_PASSWORD}")
+    print(f"元のパスワード: {EXAMPLE_PASSWORD}")
 
-    # Hash the password
+    # パスワードをハッシュ化
     hashed = hash_password(EXAMPLE_PASSWORD)
-    print(f"Hashed password: {hashed}")
+    print(f"ハッシュ化されたパスワード: {hashed}")
 
-    # Verify the password
+    # パスワードを検証
     is_correct = verify_password(password, hashed)
-    print(f"Password verification result: {is_correct}")
+    print(f"パスワード検証結果: {is_correct}")
 
-    # Try with wrong password
+    # 間違ったパスワードで試す
     is_wrong = verify_password("WrongPassword", hashed)
-    print(f"Wrong password verification result: {is_wrong}")
+    print(f"間違ったパスワード検証結果: {is_wrong}")

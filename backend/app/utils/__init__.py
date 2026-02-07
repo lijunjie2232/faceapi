@@ -1,6 +1,6 @@
-"""Utility modules for face recognition system including face detection, JWT utilities and password utilities."""
+"""顔検出、JWTユーティリティ、パスワードユーティリティを含む顔認識システムのユーティリティモジュール。"""
 
-# Import the pass_utils and jwt_utils modules to make them available when importing from utils
+# utilsからインポートする際に利用可能にするためにpass_utilsとjwt_utilsモジュールをインポート
 from .face_utils import (
     FaceDetector,
     base64_to_image,

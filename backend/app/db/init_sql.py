@@ -1,8 +1,8 @@
 """
-Database initialization module for SQL databases.
+SQLデータベース用データベース初期化モジュール。
 
-This module handles the initialization and setup of SQL databases
-using Tortoise ORM for the face recognition system.
+このモジュールは顔認識システム用のTortoise ORMを使用して
+SQLデータベースの初期化とセットアップを処理します。
 """
 
 from aerich import Command
@@ -22,7 +22,7 @@ SUPPORT_SQL_BACKEND = [
 ]
 
 if _CONFIG_.SQL_BACKEND not in SUPPORT_SQL_BACKEND:
-    raise ValueError(f"SQL_BACKEND must be one of {SUPPORT_SQL_BACKEND}")
+    raise ValueError(f"SQL_BACKENDは{SUPPORT_SQL_BACKEND}のいずれかである必要があります")
 if _CONFIG_.SQL_BACKEND == "sqlite":
     credentials_dict = {"file_path": _CONFIG_.SQL_DATABASE}
 else:
@@ -51,23 +51,23 @@ TORTOISE_ORM = {
 
 
 async def init_db():
-    """Initialize the SQL database and run migrations"""
+    """SQLデータベースを初期化し、マイグレーションを実行"""
     async with Command(
         tortoise_config=TORTOISE_ORM,
     ) as command:
         try:
             await command.init_db(safe=True)
-            logger.info("Database initialized")
+            logger.info("データベースを初期化しました")
         except FileExistsError:
             pass
         try:
             await command.migrate()
-            logger.info("Database migration completed")
+            logger.info("データベースマイグレーションが完了しました")
         except AttributeError:
             pass
         try:
             await command.upgrade(run_in_transaction=True)
-            logger.info("Database upgrade completed")
+            logger.info("データベースアップグレードが完了しました")
         except Exception:
             pass
         logger.debug(await command.history())

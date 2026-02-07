@@ -1,8 +1,8 @@
 """
-User routes module for the Face Recognition System.
+顔認識システムのユーザールートモジュール。
 
-This module defines the API endpoints for user management,
-including authentication, profile management, and account operations.
+このモジュールは認証、プロフィール管理、アカウント操作を含む
+ユーザー管理のAPIエンドポイントを定義します。
 """
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -24,9 +24,9 @@ router = APIRouter(
 )
 
 
-@router.post("/login")
+@router.post("/login", response_model=DataResponse[dict])
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    """Login endpoint that returns a JWT token upon successful authentication"""
+    """認証成功時にJWTトークンを返すログインエンドポイント"""
     try:
         user = await authenticate_user(form_data.username, form_data.password)
 
@@ -37,12 +37,22 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
                 headers={"WWW-Authenticate": "Bearer"},
             )
 
-        # Create access token
+        # アクセストークンを作成
         access_token = create_access_token(
-            data={"sub": str(user.id)},  # Using user ID as subject
+            data={"sub": str(user.id)},  # ユーザーIDをサブジェクトとして使用
         )
 
-        return {"access_token": access_token, "token_type": "bearer"}
+        token_data = {
+            "token": access_token,
+            "token_type": "Bearer",
+        }
+
+        return DataResponse[dict](
+            success=True,
+            message="Login successful",
+            code=200,
+            data=token_data,
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -51,14 +61,14 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         ) from e
 
 
-@router.post("/signin", response_model=DataResponse[User])
+@router.post("/signup", response_model=DataResponse[User])
 async def create_user(user: UserCreate):
-    """Create a new user account"""
+    """新しいユーザーアカウントを作成"""
     try:
-        # Create the user via service
+        # サービス経由でユーザーを作成
         created_user = await create_user_service(user)
 
-        # Convert to response format
+        # レスポンス形式に変換
         user_response = User(
             id=created_user.id,
             username=created_user.username,
@@ -71,7 +81,10 @@ async def create_user(user: UserCreate):
         )
 
         return DataResponse[User](
-            success=True, message="User created successfully", data=user_response
+            success=True,
+            message="User created successfully",
+            code=200,
+            data=user_response,
         )
     except HTTPException:
         raise
@@ -84,14 +97,14 @@ async def create_user(user: UserCreate):
 
 @router.get("/me", response_model=DataResponse[User])
 async def get_current_user_profile(current_user: str = Depends(get_current_user)):
-    """Get the current user's profile based on the authentication token"""
+    """認証トークンに基づいて現在のユーザーのプロフィールを取得"""
     try:
         user_id = int(current_user)
 
         user = await get_current_user_profile_service(user_id)
 
         return DataResponse[User](
-            success=True, message="Profile retrieved successfully", data=user
+            success=True, message="Profile retrieved successfully", code=200, data=user
         )
     except HTTPException:
         raise
@@ -105,11 +118,11 @@ async def get_current_user_profile(current_user: str = Depends(get_current_user)
 async def update_current_user_profile(
     user_update: UserUpdate, current_user: str = Depends(get_current_user)
 ):
-    """Update the current user's profile based on the authentication token"""
+    """認証トークンに基づいて現在のユーザーのプロフィールを更新"""
     try:
         user_id = int(current_user)
 
-        # Update the user via service
+        # サービス経由でユーザーを更新
         updated_user_obj = await update_user_profile_service(user_id, user_update)
 
         updated_user = User(
@@ -125,7 +138,10 @@ async def update_current_user_profile(
         )
 
         return DataResponse[User](
-            success=True, message="Profile updated successfully", data=updated_user
+            success=True,
+            message="Profile updated successfully",
+            code=200,
+            data=updated_user,
         )
     except HTTPException:
         raise
@@ -140,15 +156,18 @@ async def update_current_user_profile(
 async def delete_current_user_account(
     current_user: str = Depends(get_current_user),
 ):
-    """Delete the current user's account based on the authentication token"""
+    """認証トークンに基づいて現在のユーザーのアカウントを削除"""
     try:
         user_id = int(current_user)
 
-        # Delete the user account via service
+        # サービス経由でユーザーアカウントを削除
         success = await delete_user_account_service(user_id)
 
         return DataResponse[bool](
-            success=True, message="Account deactivated successfully", data=success
+            success=True,
+            message="Account deactivated successfully",
+            code=200,
+            data=success,
         )
     except HTTPException:
         raise

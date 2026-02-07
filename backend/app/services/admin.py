@@ -5,27 +5,70 @@ This module contains business logic for administrative operations
 including user management functionalities.
 """
 
-from typing import List
-from ..models.user import UserModel
+from typing import List, Optional
+
 from ..db import FACE_FEATURES_COLLECTION, get_milvus_client
-from ..schemas import User, UserCreateAsAdmin, UserUpdateAsAdmin, BatchOperationResult
+from ..models.user import UserModel
+from ..schemas import BatchOperationResult, User, UserCreateAsAdmin, UserUpdateAsAdmin
 from ..utils import hash_password, load_collection
 
 
-async def list_users_service(skip: int = 0, limit: int = 100):
+async def list_users_service(
+    skip: int = 0,
+    limit: int = 100,
+    username: Optional[str] = None,
+    email: Optional[str] = None,
+    full_name: Optional[str] = None,
+    is_active: Optional[bool] = None,
+    is_admin: Optional[bool] = None,
+    set_face: Optional[bool] = None,
+):
     """
     Service function to list all users with pagination.
 
     Args:
         skip: Number of records to skip for pagination
         limit: Maximum number of records to return
+        username: Optional filter for username (case-insensitive partial match)
+        email: Optional filter for email (case-insensitive partial match)
+        full_name: Optional filter for full name (case-insensitive partial match)
+        is_active: Optional filter for active status
+        is_admin: Optional filter for admin status
+        set_face: Optional filter for face picture status (True if face pic is set, False if not)
 
     Returns:
         A tuple containing the list of users and the total count
     """
-    users_queryset = UserModel.all().offset(skip).limit(limit)
-    count = await UserModel.all().count()
-    users_list = await users_queryset
+    from tortoise.expressions import Q
+
+    # Build the query with filters if any filter is provided
+    users_queryset = UserModel.all()
+    filter_condition = Q()  # Start with an empty condition
+
+    if username is not None:
+        filter_condition &= Q(username__icontains=username)
+    if email is not None:
+        filter_condition &= Q(email__icontains=email)
+    if full_name is not None:
+        filter_condition &= Q(full_name__icontains=full_name)
+    if is_active is not None:
+        filter_condition &= Q(is_active=is_active)
+    if is_admin is not None:
+        filter_condition &= Q(is_admin=is_admin)
+    if set_face is not None:
+        if set_face:
+            filter_condition &= ~Q(head_pic=None)  # Not null (face pic is set)
+        else:
+            filter_condition &= Q(head_pic=None)  # Is null (no face pic set)
+
+    # Apply the combined filter
+    users_queryset = users_queryset.filter(filter_condition)
+
+    # Get the count with the same filter conditions
+    count = await users_queryset.count()
+
+    # Apply pagination
+    users_list = await users_queryset.offset(skip).limit(limit)
 
     users = []
     for user_obj in users_list:

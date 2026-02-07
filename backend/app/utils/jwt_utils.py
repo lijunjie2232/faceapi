@@ -1,5 +1,5 @@
 """
-JWT utility module for creating and verifying JWT tokens for authentication.
+認証用のJWTトークンの作成と検証のためのJWTユーティリティモジュール。
 """
 
 from datetime import datetime, timedelta
@@ -13,20 +13,20 @@ from passlib.context import CryptContext
 from ..core import _CONFIG_
 from ..models import UserModel
 
-# OAuth2 scheme for token authentication
+# トークン認証のためのOAuth2スキーム
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{_CONFIG_.API_V1_STR}/login")
 
 
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     """
-    Create a JWT access token with the given data and expiration time.
+    指定されたデータと有効期限でJWTアクセストークンを作成。
 
-    Args:
-        data: The data to include in the token
-        expires_delta: Optional expiration time for the token
+    引数:
+        data: トークンに含めるデータ
+        expires_delta: トークンのオプション有効期限
 
-    Returns:
-        The encoded JWT token
+    戻り値:
+        エンコードされたJWTトークン
     """
     to_encode = data.copy()
     if expires_delta:
@@ -38,7 +38,7 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
     to_encode.update({"exp": expire})
 
-    # Explicitly use HS256 algorithm from settings
+    # 設定から明示的にHS256アルゴリズムを使用
     encoded_jwt = jwt.encode(
         to_encode, _CONFIG_.JWT_SECRET_KEY, algorithm=_CONFIG_.JWT_ALGORITHM
     )
@@ -47,16 +47,16 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
 
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     """
-    Get the current authenticated user from the provided token.
+    提供されたトークンから現在認証されているユーザーを取得。
 
-    Args:
-        token: The JWT token from the Authorization header
+    引数:
+        token: AuthorizationヘッダーからのJWTトークン
 
-    Returns:
-        The user identifier from the token
+    戻り値:
+        トークンからのユーザー識別子
 
-    Raises:
-        HTTPException: If the token is invalid or expired
+    例外:
+        HTTPException: トークンが無効または期限切れの場合
     """
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
@@ -64,7 +64,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        # Explicitly specify HS256 algorithm from settings
+        # 設定から明示的にHS256アルゴリズムを指定
         payload = jwt.decode(
             token, _CONFIG_.JWT_SECRET_KEY, algorithms=[_CONFIG_.JWT_ALGORITHM]
         )
@@ -79,19 +79,19 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 async def get_current_active_user(current_user: str = Depends(get_current_user)):
     """
-    Get the current active user, checking that they are active.
+    現在のアクティブユーザーを取得し、アクティブであることを確認。
 
-    Args:
-        current_user: The user identifier from the token
+    引数:
+        current_user: トークンからのユーザー識別子
 
-    Returns:
-        The current active user
+    戻り値:
+        現在のアクティブユーザー
 
-    Raises:
-        HTTPException: If the user is inactive
+    例外:
+        HTTPException: ユーザーが非アクティブの場合
     """
-    # In a real application, you would fetch user details from the database
-    # and check if they are active. For now, we just return the user ID.
+    # 実際のアプリケーションでは、データベースからユーザー詳細を取得し
+    # アクティブかどうかを確認します。ここではユーザーIDを返すだけです。
     if current_user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Inactive user"
@@ -106,14 +106,14 @@ async def get_current_active_user(current_user: str = Depends(get_current_user))
 
 async def get_current_admin_user(current_user: str = Depends(get_current_user)):
     """
-    Get the current admin user, checking that they are an admin.
-    This function is used for admin-only endpoints.
-    Parameters:
-    - current_user: The user identifier from the token
-    Returns:
-    - The current admin user
-    Raises:
-    - HTTPException: If the user is not an admin
+    現在の管理者ユーザーを取得し、管理者であることを確認。
+    この関数は管理者専用エンドポイントで使用されます。
+    パラメータ:
+    - current_user: トークンからのユーザー識別子
+    戻り値:
+    - 現在の管理者ユーザー
+    例外:
+    - HTTPException: ユーザーが管理者でない場合
     """
     user = await UserModel.get(id=current_user)
     if not user.is_admin:

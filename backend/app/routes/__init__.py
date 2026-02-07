@@ -1,9 +1,9 @@
 """
-Routes module for the Face Recognition System.
+顔認識システムのルートモジュール。
 
-This module contains the API route definitions for the application,
-organizing endpoints into logical groups such as admin, face recognition,
-and user management.
+このモジュールはアプリケーションのAPIルート定義を含み、
+管理者、顔認識、ユーザー管理などの論理的なグループに
+エンドポイントを整理します。
 """
 
 from .admin import router as admin

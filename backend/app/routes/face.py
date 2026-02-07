@@ -1,8 +1,8 @@
 """
-Face recognition routes module for the Face Recognition System.
+顔認識システムの顔認識ルートモジュール。
 
-This module defines the API endpoints for face registration, recognition,
-and verification functionalities of the application.
+このモジュールはアプリケーションの顔登録、認識、
+検証機能のAPIエンドポイントを定義します。
 """
 
 import logging
@@ -26,13 +26,13 @@ async def verify_face(
     image: UploadFile = File(...),
 ):
     """
-    Verify a face from uploaded image and return either a denial result or an OAuth2 token.
+    アップロードされた画像から顔を検証し、拒否結果またはOAuth2トークンを返します。
 
-    Args:
-        image: Uploaded image file containing a face
+    引数:
+        image: 顔を含むアップロードされた画像ファイル
 
-    Returns:
-        Either a denial message or an OAuth2 token if face is recognized
+    戻り値:
+        顔が認識された場合は拒否メッセージまたはOAuth2トークン
     """
     try:
         result = await verify_face_service(image)
@@ -41,7 +41,7 @@ async def verify_face(
         raise
     except Exception as e:
         print_exc()
-        logger.error("Error in face verification: %s", str(e))
+        logger.error("顔検証エラー: %s", str(e))
         raise e
 
 
@@ -51,18 +51,18 @@ async def update_face_embedding(
     image: UploadFile = File(...), current_user: str = Depends(get_current_user)
 ):
     """
-    Update the face embedding for the currently authenticated user.
-    Requires OAuth2 authentication, similar to user API.
+    現在認証されているユーザーの顔埋め込みを更新します。
+    ユーザーAPIと同様にOAuth2認証が必要です。
 
-    Args:
-        image: Uploaded image file containing the new face
-        current_user: The currently authenticated user (from JWT token)
+    引数:
+        image: 新しい顔を含むアップロードされた画像ファイル
+        current_user: 現在認証されているユーザー（JWTトークンから）
 
-    Returns:
-        Success message indicating the embedding was updated
+    戻り値:
+        埋め込みが更新されたことを示す成功メッセージ
     """
     try:
-        # Get user ID from the token
+        # トークンからユーザーIDを取得
         user_id = int(current_user)
 
         result = await update_face_embedding_service(user_id, image)
@@ -71,5 +71,5 @@ async def update_face_embedding(
         raise
     except Exception as e:
         print_exc()
-        logger.error("Error in face embedding update: %s", str(e))
+        logger.error("顔埋め込み更新エラー: %s", str(e))
         raise e

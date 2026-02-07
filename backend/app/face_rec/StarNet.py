@@ -73,14 +73,14 @@ class StarNet(nn.Module):
         self.num_classes = num_classes
         self.in_channel = 32
         self.fp16 = fp16
-        # stem layer
+        # ステム層
         self.stem = nn.Sequential(
             ConvBN(3, self.in_channel, kernel_size=3, stride=2, padding=1), nn.ReLU6()
         )
         dpr = [
             x.item() for x in torch.linspace(0, dropout, sum(depths))
-        ]  # stochastic depth
-        # build stages
+        ]  # 確率的深度
+        # ステージを構築
         self.stages = nn.ModuleList()
         cur = 0
         for i_layer in range(len(depths)):
@@ -93,7 +93,7 @@ class StarNet(nn.Module):
             ]
             cur += depths[i_layer]
             self.stages.append(nn.Sequential(down_sampler, *blocks))
-        # head
+        # ヘッド
         self.norm = nn.BatchNorm2d(self.in_channel)
         self.avgpool = nn.AdaptiveAvgPool2d(1)
         # self.head = nn.Linear(self.in_channel, num_classes)
@@ -133,7 +133,7 @@ def inference(net, img, device="cuda", to_array=True):
     img = torch.from_numpy(img).unsqueeze(0).float()
     img.div_(255).sub_(0.5).div_(0.5)
     # net.eval()
-    # inference in amp mode
+    # ampモードで推論
     img = img.to(device)
     net = net.to(device)
     feat = net(img, cuda=use_cuda)
@@ -217,7 +217,7 @@ def get_s4(
 
 class faceDetector:
     """
-    a face detector base on cv2
+    cv2ベースの顔検出器
     """
 
     def __init__(self):
@@ -237,7 +237,7 @@ class faceDetector:
             minNeighbors=5,
             minSize=(30, 30),
         )
-        # cut image
+        # 画像を切り取る
         return [image[y : y + h, x : x + w] for (x, y, w, h) in faces]
 
 

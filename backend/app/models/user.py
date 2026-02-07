@@ -1,8 +1,8 @@
 """
-User model module for the Face Recognition System.
+顔認識システムのユーザーモデルモジュール。
 
-This module defines the database model for user accounts,
-including fields for authentication, profile information, and metadata.
+このモジュールは認証、プロフィール情報、メタデータを含む
+ユーザーアカウントのデータベースモデルを定義します。
 """
 
 from tortoise import fields
@@ -11,10 +11,11 @@ from tortoise.models import Model
 
 class UserModel(Model):
     """
-    Database model for user accounts.
+    ユーザーアカウントのデータベースモデル。
 
-    This model stores user account information including authentication details,
-    profile information, and metadata about the account status and creation time.
+    このモデルは認証詳細、プロフィール情報、
+    アカウント状態と作成時間に関するメタデータを含む
+    ユーザーアカウント情報を保存します。
     """
 
     id = fields.IntField(pk=True)
@@ -29,7 +30,7 @@ class UserModel(Model):
     is_admin = fields.BooleanField(default=False)
 
     class Meta:
-        """Meta class to define table configuration."""
+        """テーブル設定を定義するメタクラス。"""
 
         table = "users"
 
