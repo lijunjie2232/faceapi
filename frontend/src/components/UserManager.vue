@@ -31,6 +31,20 @@
             </div>
           </div>
 
+          <!-- Search Filters Section -->
+          <div class="filter-section">
+            <el-space wrap :size="10" class="filter-tags">
+              <el-tag v-for="tag in filterTags" :key="tag.name" closable :type="getFilterTagType(tag.name)"
+                @close="removeFilterTag(tag.name)" round>
+                {{ tag.label }}: {{ tag.value }}
+              </el-tag>
+
+              <el-button type="info" size="middle" icon="Plus" @click="showFilterDialog = true" round plain>
+                Filte By Column
+              </el-button>
+            </el-space>
+          </div>
+
           <el-card>
             <el-table :data="users" style="width: 100%" v-loading="loading" @selection-change="handleSelectionChange">
               <el-table-column type="selection" width="55"></el-table-column>
@@ -53,7 +67,7 @@
               </el-table-column>
               <el-table-column prop="is_admin" label="Role" width="100">
                 <template #default="scope">
-                  <el-tag :type="scope.row.is_admin ? 'danger' : 'info'" size="small">
+                  <el-tag :type="scope.row.is_admin ? 'danger' : 'info'" size="middle" round>
                     {{ scope.row.is_admin ? 'Admin' : 'User' }}
                   </el-tag>
                 </template>
@@ -118,6 +132,48 @@
         </div>
       </el-col>
     </el-row>
+
+    <!-- Filter Dialog -->
+    <el-dialog v-model="showFilterDialog" title="Add Filter" width="500px" :before-close="closeFilterDialog">
+      <el-form :model="filterForm" label-width="120px">
+        <el-form-item label="Filter Type">
+          <el-select v-model="filterForm.key" placeholder="Select filter type" @change="onFilterKeyChange"
+            style="width: 100%;">
+            <el-option v-for="option in filterOptions" :key="option.value" :label="option.label" :value="option.value">
+            </el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-if="['username', 'email', 'full_name'].includes(filterForm.key)"
+          :label="filterOptions.find(o => o.value === filterForm.key)?.label || 'Value'">
+          <el-input v-model="filterForm.value" placeholder="Enter value" @keyup.enter="addFilterTag">
+          </el-input>
+        </el-form-item>
+
+        <el-form-item v-else-if="['is_active', 'is_admin', 'set_face'].includes(filterForm.key)"
+          :label="filterOptions.find(o => o.value === filterForm.key)?.label || 'Value'">
+          <el-select v-model="filterForm.value" placeholder="Select value" style="width: 100%;">
+            <el-option label="Yes" :value="true"></el-option>
+            <el-option label="No" :value="false"></el-option>
+          </el-select>
+        </el-form-item>
+
+        <el-form-item v-else label="Value">
+          <el-input v-model="filterForm.value" placeholder="Enter value" @keyup.enter="addFilterTag">
+          </el-input>
+        </el-form-item>
+      </el-form>
+
+      <template #footer>
+        <div class="dialog-footer">
+          <el-button @click="closeFilterDialog">Cancel</el-button>
+          <el-button type="primary" @click="addFilterTag"
+            :disabled="!filterForm.key || (filterForm.value !== false && !filterForm.value)">
+            Add Filter
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <!-- 右侧抽屉表单 -->
     <el-drawer v-model="drawerVisible" :title="formTitle" direction="rtl" size="500px"
@@ -228,9 +284,9 @@ const submitting = ref(false)
 const userFormRef = ref()
 const drawerVisible = ref(false)
 const showFaceDetectionPopOut = ref(false)  // Changed from faceDetectionVisible
-const currentUserToken = ref('')
+// const currentUserToken = ref('')
 const selectedUserForFace = ref(null)
-const currentUserRole = ref(false) // 当前用户是否为管理员
+// const currentUserRole = ref(false) // 当前用户是否为管理员
 // 添加hover状态管理
 const hoveredUserId = ref(null)
 // 添加状态更新loading状态
@@ -242,6 +298,14 @@ const passwordResetDialogVisible = ref(false)
 const newPassword = ref('')
 const confirmPassword = ref('')
 const passwordResetFormRef = ref()
+
+// 添加搜索过滤相关状态
+const filterTags = ref([])
+const showFilterDialog = ref(false)
+const filterForm = reactive({
+  key: '',
+  value: ''
+})
 
 // 添加密码确认验证状态
 const passwordMatchStatus = ref('')
@@ -262,6 +326,15 @@ const pagination = reactive({
   size: 10,
   total: 0
 })
+
+const filterOptions = [
+  { value: 'username', label: 'Username' },
+  { value: 'email', label: 'Email' },
+  { value: 'full_name', label: 'Full Name' },
+  { value: 'is_active', label: 'Active Status' },
+  { value: 'is_admin', label: 'Admin Role' },
+  { value: 'set_face', label: 'Has Face Data' }
+]
 
 const formRules = computed(() => {
   return {
@@ -297,31 +370,14 @@ const formTitle = computed(() => {
   return userForm.id ? 'Edit User' : 'Create New User'
 })
 
-// 判断当前用户是否可以修改角色（只有管理员可以修改角色）
-const canModifyRole = computed(() => {
-  return currentUserRole.value === true
-})
+// // 判断当前用户是否可以修改角色（只有管理员可以修改角色）
+// const canModifyRole = computed(() => {
+//   return currentUserRole.value === true
+// })
 
 onMounted(() => {
-  fetchCurrentUser()
   fetchUsers()
 })
-
-const fetchCurrentUser = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    if (!token) return
-
-    currentUserToken.value = token
-    const headers = { 'Authorization': `Bearer ${token}` }
-    const response = await axios.get(`${API_BASE_URL}/api/v1/users/me`, { headers })
-    if (response.data.success) {
-      currentUserRole.value = response.data.data.is_admin || false
-    }
-  } catch (error) {
-    console.error('Failed to fetch current user:', error)
-  }
-}
 
 const formatDate = (dateString) => {
   if (!dateString) return '-'
@@ -334,8 +390,21 @@ const fetchUsers = async () => {
     const token = localStorage.getItem('token')
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {}
 
+    // 构建查询参数
+    const params = {
+      skip: (pagination.page - 1) * pagination.size,
+      limit: pagination.size
+    }
+
+    // 添加过滤参数
+    filterTags.value.forEach(tag => {
+      params[tag.name] = tag.value
+    })
+
+    const queryParams = new URLSearchParams(params).toString()
+
     const response = await axios.get(
-      `${API_BASE_URL}/api/v1/admin/users?skip=${(pagination.page - 1) * pagination.size}&limit=${pagination.size}`,
+      `${API_BASE_URL}/api/v1/admin/users?${queryParams}`,
       { headers }
     )
 
@@ -353,8 +422,8 @@ const fetchUsers = async () => {
 }
 
 const handleSizeChange = (size) => {
-  pagination.size = size
   pagination.page = 1
+  pagination.size = size
   fetchUsers()
 }
 
@@ -411,13 +480,10 @@ const submitForm = async () => {
       email: userForm.email,
       full_name: userForm.full_name,
       is_active: userForm.is_active,
-      ...(userForm.password && { password: userForm.password })
+      ...(userForm.password && { password: userForm.password }),
+      is_admin: userForm.is_admin,
     }
 
-    // 只有管理员才能修改角色
-    if (canModifyRole.value && userForm.id) {
-      userData.is_admin = userForm.is_admin
-    }
 
     if (userForm.id) {
       // Update existing user
@@ -531,7 +597,7 @@ const updateUserFace = async (imageData) => {
 
     // return response.data;
   } catch (error) {
-    console.error('Error updating user face image:', error);
+    // console.error('Error updating user face image:', error);
     if (error.response?.data?.detail) {
       ElMessage.error(error.response.data.detail);
     } else {
@@ -638,7 +704,7 @@ const handleBatchAction = async (command) => {
         break
     }
   } catch (error) {
-    console.error('Batch operation failed:', error)
+    // console.error('Batch operation failed:', error)
   }
 }
 
@@ -841,6 +907,85 @@ const batchDeleteFace = async () => {
   }
 }
 
+// 新增过滤标签相关方法
+const onFilterKeyChange = () => {
+  filterForm.value = ''
+}
+
+const addFilterTag = () => {
+  if (!filterForm.key || (filterForm.value !== false && !filterForm.value)) return
+
+  // 获取标签显示名称
+  const option = filterOptions.find(opt => opt.value === filterForm.key)
+  const label = option ? option.label : filterForm.key
+
+  // 检查是否已经存在相同的过滤条件，如果存在则替换
+  const existingIndex = filterTags.value.findIndex(tag => tag.name === filterForm.key)
+  if (existingIndex !== -1) {
+    // 替换现有的过滤条件
+    filterTags.value[existingIndex] = {
+      name: filterForm.key,
+      value: filterForm.value,
+      label: label,
+      type: getFilterTagType(filterForm.key)
+    }
+  } else {
+    // 添加新标签
+    filterTags.value.push({
+      name: filterForm.key,
+      value: filterForm.value,
+      label: label,
+      type: getFilterTagType(filterForm.key)
+    })
+  }
+
+  // 重置选择器
+  filterForm.key = ''
+  filterForm.value = ''
+
+  // 关闭对话框
+  showFilterDialog.value = false
+
+  // 重新获取用户列表
+  pagination.page = 1
+  fetchUsers()
+}
+
+const removeFilterTag = (tagName) => {
+  const index = filterTags.value.findIndex(tag => tag.name === tagName)
+  if (index !== -1) {
+    filterTags.value.splice(index, 1)
+    fetchUsers()
+  }
+}
+
+// 新增方法：打开过滤器对话框
+const closeFilterDialog = () => {
+  showFilterDialog.value = false
+  filterForm.key = ''
+  filterForm.value = ''
+}
+
+// 添加计算属性来获取不同过滤类型的标签颜色
+const getFilterTagType = (filterName) => {
+  switch (filterName) {
+    case 'username':
+      return 'info'
+    case 'email':
+      return 'warning'
+    case 'full_name':
+      return 'success'
+    case 'is_active':
+      return 'primary'
+    case 'is_admin':
+      return 'danger'
+    case 'set_face':
+      return 'warning'
+    default:
+      return 'primary'
+  }
+}
+
 </script>
 
 
@@ -877,6 +1022,18 @@ const batchDeleteFace = async () => {
   font-size: 24px;
   font-weight: 600;
   flex: 1;
+}
+
+.filter-section {
+  margin-bottom: 20px;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
 }
 
 .table-footer {
@@ -985,5 +1142,10 @@ const batchDeleteFace = async () => {
 /* 人脸按钮样式优化 */
 :deep(.el-button .el-icon) {
   margin-right: 5px;
+}
+
+/* 对话框底部样式 */
+:deep(.el-dialog__footer) {
+  text-align: right;
 }
 </style>
