@@ -48,6 +48,7 @@ class Config(BaseSettings):
         )
     )  # Threshold for face recognition confidence
     MODEL_DEVICE: str = os.getenv("MODEL_DEVICE", "cuda:0")
+    MOEEL_EMB_DIM: int = int(os.getenv("EMB_DIM", "512"))
 
     # Application settings
     API_V1_STR: str = "/api/v1"
@@ -95,7 +96,10 @@ class Config(BaseSettings):
         env_file=(".env", ".env.prod"),
         env_file_encoding="utf-8",
     )
-    
+
+    # system config
+    ALLOW_FACE_DEDUPICATION: bool = True
+
     @classmethod
     def settings_customise_sources(
         cls,
