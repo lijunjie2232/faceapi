@@ -3,7 +3,7 @@
     class="face-detection-popout">
     <div class="camera-controls">
       <el-button type="primary" @click="toggleCamera" :loading="loadingModels" 
-        :disabled="loadingModels || capturedImage" class="camera-toggle-btn">
+        :disabled="loadingModels || capturedImage || !modelsLoaded" class="camera-toggle-btn">
         <el-icon>
           <VideoCamera v-if="isCameraOpen" />
           <Camera v-else />
@@ -12,12 +12,21 @@
       </el-button>
 
       <el-button :type="flipEnabled ? 'success' : 'default'" @click="toggleFlip" 
-        :disabled="capturedImage" class="flip-btn">
+        class="flip-btn">
         <el-icon>
           <Switch />
         </el-icon>
         <span>{{ flipEnabled ? 'Flip Enabled' : 'Flip Disabled' }}</span>
       </el-button>
+      
+      <!-- Auto Capture Switch -->
+      <el-switch
+        v-model="autoCaptureEnabled"
+        class="auto-capture-switch"
+        active-text="Auto Capture"
+        inactive-text="Manual Capture"
+        @change="handleAutoCaptureChange"
+      />
     </div>
 
     <!-- Show captured image preview when available -->
@@ -71,9 +80,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { ElDialog, ElButton, ElIcon, ElProgress, ElEmpty, ElMessage } from 'element-plus'
-import { VideoCamera, Camera, Switch, Check } from '@element-plus/icons-vue'
-import axios from 'axios'
+import { FaceUtils } from '@/utils/face.js'
+import { ElSwitch } from 'element-plus'
 
 // Define props and emits
 const props = defineProps({
@@ -89,10 +97,6 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue', 'faceCaptured'])
 
-// Get environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const MODELS_PATH = import.meta.env.VITE_FACE_API_MODELS_PATH || '/models'
-
 // Refs
 const dialogVisible = computed({
   get: () => props.modelValue,
@@ -103,11 +107,13 @@ const videoRef = ref(null)
 const canvasRef = ref(null)
 const isCameraOpen = ref(false)
 const loadingModels = ref(true)
+const modelsLoaded = ref(false) // Track whether models are loaded
 const modelLoadProgress = ref(0)
-const flipEnabled = ref(false)
+const flipEnabled = ref(!!localStorage.getItem('CameraFlipEnabled')) // Load flip state from localStorage
 const capturedImage = ref("") // Store the captured image
+const autoCaptureEnabled = ref(!!localStorage.getItem('FaceAutoCaptureEnabled')) // Auto capture setting from localStorage
 let stream = null
-let faceapi = null
+let faceUtils = null
 let detectionInterval = null
 
 // Computed styles for video and canvas
@@ -122,53 +128,42 @@ const canvasStyle = computed(() => ({
 // Toggle flip function
 const toggleFlip = () => {
   flipEnabled.value = !flipEnabled.value
-}
-
-// Initialize face-api.js
-onMounted(() => {
-  loadModels()
-})
-
-const loadModels = async () => {
-  try {
-    // Dynamically import face-api.js
-    const faceApiModule = await import('face-api.js')
-    faceapi = faceApiModule
-
-    // Load face-api.js models
-    await loadFaceDetectionModels()
-  } catch (error) {
-    console.error("Error loading face-api.js:", error)
-    loadingModels.value = false
+  // Save flip state to localStorage
+  if (flipEnabled.value) {
+    localStorage.setItem('CameraFlipEnabled', 'true')
+  } else {
+    localStorage.removeItem('CameraFlipEnabled')
   }
 }
 
-// Load face-api.js models
-const loadFaceDetectionModels = async () => {
+// Handle auto capture setting change
+const handleAutoCaptureChange = (value) => {
+  if (value) {
+    localStorage.setItem('FaceAutoCaptureEnabled', 'true')
+  } else {
+    localStorage.removeItem('FaceAutoCaptureEnabled')
+  }
+}
+
+const loadModels = async () => {
   try {
-    // Update progress as each model loads
-    modelLoadProgress.value = 25
-    await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_PATH)
+    faceUtils = new FaceUtils()
 
-    modelLoadProgress.value = 100
-    setTimeout(() => {
-      loadingModels.value = false
-    }, 500)
-  } catch (err) {
-    console.error("Error loading models from local path:", err)
+    // Load face-api.js models
+    const success = await faceUtils.loadFaceApi((progress) => {
+      modelLoadProgress.value = progress
+    })
 
-    // Try loading from CDN as fallback
-    try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhochacks/face-api.js/master/weights')
-
-      modelLoadProgress.value = 100
+    if (success) {
       setTimeout(() => {
         loadingModels.value = false
+        modelsLoaded.value = true // Set modelsLoaded to true when loading is finished
       }, 500)
-    } catch (fallbackErr) {
-      console.error("Error loading models from CDN:", fallbackErr)
-      loadingModels.value = false
     }
+  } catch (error) {
+    // console.error("Error loading face-api.js:", error)
+    loadingModels.value = false
+    modelsLoaded.value = true // Still set to true so the button enables, even with error
   }
 }
 
@@ -203,7 +198,7 @@ const startCamera = async () => {
       setTimeout(startFaceDetectionLoop, 500)
     }
   } catch (err) {
-    console.error("Could not access the camera:", err)
+    // console.error("Could not access the camera:", err)
     alert("Could not access the camera. Please check permissions.")
   }
 }
@@ -212,7 +207,7 @@ let ctx = null
 
 // Start face detection loop for real-time processing
 const startFaceDetectionLoop = async () => {
-  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceapi) return
+  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceUtils) return
 
   try {
     // Get the display dimensions of the video element
@@ -246,18 +241,22 @@ const startFaceDetectionLoop = async () => {
     canvas.style.transform = flipEnabled.value ? 'scaleX(-1)' : 'none'
 
     // Perform face detection on the actual video
-    const detections = await faceapi.detectAllFaces(
-      video,
-      new faceapi.TinyFaceDetectorOptions()
-    )
+    const detections = await faceUtils.detectFaces(video)
+
+    // Check if we should auto-capture
+    if (autoCaptureEnabled.value && detections && detections.length > 0) {
+      // Delay capture slightly to ensure detection is stable
+      setTimeout(() => {
+        if (autoCaptureEnabled.value && detections && detections.length > 0) {
+          captureImage()
+        }
+      }, 300)
+    }
 
     // Draw detections on canvas
     if (ctx == null) {
       ctx = canvas.getContext('2d')
     }
-
-    // Clear the canvas before drawing
-    // ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Scale the detections to match the display size
     if (detections.length > 0) {
@@ -265,24 +264,8 @@ const startFaceDetectionLoop = async () => {
       const scaleX = canvas.width / video.videoWidth
       const scaleY = canvas.height / video.videoHeight
 
-      // Draw detections by manually drawing ellipses with gradient
-      detections.forEach(detection => {
-        const box = detection.box
-
-        // Scale the box coordinates according to the display scale
-        let x = box.x * scaleX
-        let y = box.y * scaleY
-        const width = box.width * scaleX
-        const height = box.height * scaleY
-
-        // Adjust x coordinate if flipped
-        // if (flipEnabled.value) {
-        //   x = canvas.width - x - width
-        // }
-
-        // Draw rectangle with gradient
-        drawEllipseWithGradient(ctx, x + width/2, y + height/2, width/2, height/2)
-      })
+      // Use the utility function to draw detections
+      faceUtils.drawDetections(canvas, detections, scaleX, scaleY, flipEnabled.value)
     }
 
     // Continue detecting faces if camera is still active
@@ -292,35 +275,16 @@ const startFaceDetectionLoop = async () => {
       detectionInterval = setTimeout(startFaceDetectionLoop, 500) // ~2 FPS
     }
   } catch (error) {
-    console.error("Error during face detection:", error)
-    // Retry after a short delay
-    // if (isCameraOpen.value) {
-    //   detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
-    // }
+    // console.error("Error during face detection:", error)
   }
 }
 
 // Function to capture image when button is clicked
 const captureImage = () => {
-  if (!videoRef.value) return
+  if (!videoRef.value || !faceUtils) return
   
-  // Create a temporary canvas to capture the video frame
-  const tempCanvas = document.createElement('canvas')
-  tempCanvas.width = videoRef.value.videoWidth
-  tempCanvas.height = videoRef.value.videoHeight
-  const ctx = tempCanvas.getContext('2d')
-
-  // Apply flip if enabled before drawing the video frame
-  if (flipEnabled.value) {
-    ctx.translate(tempCanvas.width, 0)
-    ctx.scale(-1, 1)
-  }
-
-  // Draw current video frame to canvas
-  ctx.drawImage(videoRef.value, 0, 0, tempCanvas.width, tempCanvas.height)
-
-  // Convert to image data URL
-  const imageDataUrl = tempCanvas.toDataURL('image/jpeg')
+  // Use the utility function to capture image from video
+  const imageDataUrl = faceUtils.captureImageFromVideo(videoRef.value, flipEnabled.value)
   
   // Store the captured image for confirmation
   capturedImage.value = imageDataUrl
@@ -366,56 +330,17 @@ const handleClose = () => {
   dialogVisible.value = false
 }
 
+// Initialize when component mounts
+onMounted(async () => {
+  // Load auto capture setting from localStorage
+  autoCaptureEnabled.value = !!localStorage.getItem('FaceAutoCaptureEnabled')
+  await loadModels()
+})
+
 // Clean up camera stream when component unmounts
 onUnmounted(() => {
   stopCamera()
 })
-
-// Function to draw ellipse with green border
-function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
-  // Draw a green ellipse border for face detection
-  ctx.save();
-
-  // Draw the green border for the ellipse
-  ctx.strokeStyle = '#00ff00'; // Bright green color
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Add L-shaped corners for better visibility
-  ctx.beginPath();
-
-  // Top-left corner
-  ctx.moveTo(centerX - radiusX, centerY - radiusY + 10);
-  ctx.lineTo(centerX - radiusX, centerY - radiusY);
-  ctx.lineTo(centerX - radiusX + 10, centerY - radiusY);
-
-  // Top-right corner
-  ctx.moveTo(centerX + radiusX - 10, centerY - radiusY);
-  ctx.lineTo(centerX + radiusX, centerY - radiusY);
-  ctx.lineTo(centerX + radiusX, centerY - radiusY + 10);
-
-  // Bottom-left corner
-  ctx.moveTo(centerX - radiusX, centerY + radiusY - 10);
-  ctx.lineTo(centerX - radiusX, centerY + radiusY);
-  ctx.lineTo(centerX - radiusX + 10, centerY + radiusY);
-
-  // Bottom-right corner
-  ctx.moveTo(centerX + radiusX - 10, centerY + radiusY);
-  ctx.lineTo(centerX + radiusX, centerY + radiusY);
-  ctx.lineTo(centerX + radiusX, centerY + radiusY - 10);
-
-  ctx.stroke();
-
-  // Draw a small circle at the center of the ellipse
-  ctx.beginPath();
-  ctx.fillStyle = '#00ff00'; // Same bright green color
-  ctx.arc(centerX, centerY, 4, 0, Math.PI * 2); // Small circle with radius 4
-  ctx.fill();
-
-  ctx.restore();
-}
 </script>
 
 <style scoped>
@@ -429,6 +354,7 @@ function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
   justify-content: center;
   margin-bottom: 20px;
   flex-wrap: wrap;
+  align-items: center;
 }
 
 .image-preview-container {
@@ -564,6 +490,10 @@ function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
 }
 
 .flip-btn {
+  margin-left: 10px;
+}
+
+.auto-capture-switch {
   margin-left: 10px;
 }
 </style>

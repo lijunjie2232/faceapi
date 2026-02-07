@@ -43,10 +43,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue'
 import { ElDialog, ElButton, ElIcon, ElProgress, ElEmpty, ElMessage, ElAlert } from 'element-plus'
-import { VideoCamera, Camera, Switch } from '@element-plus/icons-vue'
-import axios from 'axios'
+import { FaceUtils } from '@/utils/face.js'
 
 // Define props and emits
 const props = defineProps({
@@ -57,10 +56,6 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['update:modelValue', 'faceVerified'])
-
-// Get environment variables
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
-const MODELS_PATH = import.meta.env.VITE_FACE_API_MODELS_PATH || '/models'
 
 // Refs
 const dialogVisible = computed({
@@ -73,9 +68,8 @@ const canvasRef = ref(null)
 const isCameraOpen = ref(false)
 const loadingModels = ref(true)
 const modelLoadProgress = ref(0)
-const flipEnabled = ref(false)
-let stream = null
-let faceapi = null
+const flipEnabled = ref(!!localStorage.getItem('CameraFlipEnabled')) // Load flip state from localStorage
+let faceUtils = null
 let detectionInterval = null
 const verifyingFace = ref(false) // Flag to prevent multiple verification requests
 
@@ -104,55 +98,32 @@ const canvasStyle = computed(() => ({
 // Toggle flip function
 const toggleFlip = () => {
   flipEnabled.value = !flipEnabled.value
-}
-
-// Initialize face-api.js
-onMounted(() => {
-  loadModels()
-})
-
-const loadModels = async () => {
-  try {
-    // Dynamically import face-api.js
-    const faceApiModule = await import('face-api.js')
-    faceapi = faceApiModule
-
-    // Load face-api.js models
-    await loadFaceDetectionModels()
-  } catch (error) {
-    console.error("Error loading face-api.js:", error)
-    ElMessage.error("Failed to load face detection models")
-    loadingModels.value = false
+  // Save flip state to localStorage
+  if (flipEnabled.value) {
+    localStorage.setItem('CameraFlipEnabled', 'true')
+  } else {
+    localStorage.removeItem('CameraFlipEnabled')
   }
 }
 
-// Load face-api.js models
-const loadFaceDetectionModels = async () => {
+const loadModels = async () => {
   try {
-    // Update progress as each model loads
-    modelLoadProgress.value = 25
-    await faceapi.nets.tinyFaceDetector.loadFromUri(MODELS_PATH)
+    faceUtils = new FaceUtils()
 
-    modelLoadProgress.value = 100
-    setTimeout(() => {
-      loadingModels.value = false
-    }, 500)
-  } catch (err) {
-    console.error("Error loading models from local path:", err)
+    // Load face-api.js models
+    const success = await faceUtils.loadFaceApi((progress) => {
+      modelLoadProgress.value = progress
+    })
 
-    // Try loading from CDN as fallback
-    try {
-      await faceapi.nets.tinyFaceDetector.loadFromUri('https://raw.githubusercontent.com/justadudewhochacks/face-api.js/master/weights')
-
-      modelLoadProgress.value = 100
+    if (success) {
       setTimeout(() => {
         loadingModels.value = false
       }, 500)
-    } catch (fallbackErr) {
-      console.error("Error loading models from CDN:", fallbackErr)
-      ElMessage.error("Failed to load face detection models")
-      loadingModels.value = false
     }
+  } catch (error) {
+    // console.error("Error loading face-api.js:", error)
+    ElMessage.error("Failed to load face detection models")
+    loadingModels.value = false
   }
 }
 
@@ -192,16 +163,17 @@ const startCamera = async () => {
       setTimeout(startFaceDetectionLoop, 500)
     }
   } catch (err) {
-    console.error("Could not access the camera:", err)
+    // console.error("Could not access the camera:", err)
     ElMessage.error("Could not access the camera. Please check permissions.")
   }
 }
 
+let stream = null
 let ctx = null
 
 // Start face detection loop for real-time processing
 const startFaceDetectionLoop = async () => {
-  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceapi || !dialogVisible.value) return
+  if (!isCameraOpen.value || !videoRef.value || !canvasRef.value || !faceUtils || !dialogVisible.value) return
 
   try {
     // Get the display dimensions of the video element
@@ -235,18 +207,12 @@ const startFaceDetectionLoop = async () => {
     canvas.style.transform = flipEnabled.value ? 'scaleX(-1)' : 'none'
 
     // Perform face detection on the actual video
-    const detections = await faceapi.detectAllFaces(
-      video,
-      new faceapi.TinyFaceDetectorOptions()
-    )
+    const detections = await faceUtils.detectFaces(video)
 
     // Draw detections on canvas
     if (ctx == null) {
       ctx = canvas.getContext('2d')
     }
-
-    // Clear the canvas before drawing
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
 
     // Scale the detections to match the display size
     if (detections.length > 0) {
@@ -254,47 +220,19 @@ const startFaceDetectionLoop = async () => {
       const scaleX = canvas.width / video.videoWidth
       const scaleY = canvas.height / video.videoHeight
 
-      // Draw detections by manually drawing ellipses with gradient
-      detections.forEach(detection => {
-        const box = detection.box
-
-        // Scale the box coordinates according to the display scale
-        let x = box.x * scaleX
-        let y = box.y * scaleY
-        const width = box.width * scaleX
-        const height = box.height * scaleY
-
-        // Adjust x coordinate if flipped
-        if (flipEnabled.value) {
-          x = canvas.width - x - width
-        }
-
-        // Draw rectangle with gradient
-        drawEllipseWithGradient(ctx, x + width / 2, y + height / 2, width / 2, height / 2)
-      })
+      // Use the utility function to draw detections
+      faceUtils.drawDetections(canvas, detections, scaleX, scaleY, flipEnabled.value)
 
       // If we detect a face and are not currently verifying, send it to the server
       if (!verifyingFace.value) {
         // Capture the current frame and send it for verification
-        const tempCanvas = document.createElement('canvas')
-        tempCanvas.width = video.videoWidth
-        tempCanvas.height = video.videoHeight
-        const tempCtx = tempCanvas.getContext('2d')
+        const imageDataUrl = faceUtils.captureImageFromVideo(video, flipEnabled.value)
 
-        // Apply flip if enabled before drawing the video frame
-        if (flipEnabled.value) {
-          tempCtx.translate(tempCanvas.width, 0)
-          tempCtx.scale(-1, 1)
-        }
-
-        // Draw current video frame to canvas
-        tempCtx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height)
-
-        // Convert to image data URL
-        const imageDataUrl = tempCanvas.toDataURL('image/jpeg')
+        // Convert to form data and send to server
+        const formData = faceUtils.imageToFormData(imageDataUrl, 'face_image.jpg')
 
         // Start verification process
-        verifyFace(imageDataUrl)
+        verifyFace(formData)
       }
     } else {
       // No face detected, continue the loop
@@ -303,7 +241,7 @@ const startFaceDetectionLoop = async () => {
       }
     }
   } catch (error) {
-    console.error("Error during face detection:", error)
+    // console.error("Error during face detection:", error)
     // Retry after a short delay
     if (isCameraOpen.value) {
       detectionInterval = setTimeout(startFaceDetectionLoop, 1000)
@@ -312,68 +250,46 @@ const startFaceDetectionLoop = async () => {
 }
 
 // Function to verify face with server
-const verifyFace = async (imageDataUrl) => {
+const verifyFace = async (formData) => {
   if (verifyingFace.value) return // Skip if already verifying
 
   verifyingFace.value = true
 
   try {
-    // Create FormData to send the image
-    const formData = new FormData();
-
-    // Extract base64 data from data URL and convert to Blob
-    const base64Data = imageDataUrl.split(',')[1];
-    const byteCharacters = atob(base64Data);
-    const byteArrays = [];
-
-    for (let offset = 0; offset < byteCharacters.length; offset += 512) {
-      const slice = byteCharacters.slice(offset, offset + 512);
-      const byteNumbers = new Array(slice.length);
-
-      for (let i = 0; i < slice.length; i++) {
-        byteNumbers[i] = slice.charCodeAt(i);
-      }
-
-      const byteArray = new Uint8Array(byteNumbers);
-      byteArrays.push(byteArray);
-    }
-
-    const blob = new Blob(byteArrays, { type: 'image/jpeg' });
-    formData.append('image', blob, 'face_image.jpg');
-
     // Send the captured image to the verification endpoint
-    const response = await axios.post(
-      `${API_BASE_URL}/api/v1/face/verify`,
-      formData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      }
-    );
+    const response = await faceUtils.verifyFace(formData)
 
     // Check if response has the expected structure with 'code' field
-    if (response.data.recognized === true || response.data.code === 200 || response.data.success) {
+    if (response.code === 200) {
+      // Extract relevant data from the response
+      const { recognized, user_id, confidence, data, message } = response
+      const { token, token_type } = data
+      
       // Store the token in localStorage
-      localStorage.setItem('token', response.data.token)
+      localStorage.setItem('token', token)
+      localStorage.setItem('token_type', token_type)
 
-      ElMessage.success(response.data.message || 'Face recognition successful');
+      // Show success message with user info
+      ElMessage.success(message || `Face recognized successfully as user ${user_id}`);
 
       // Emit event with verification result
       emit('faceVerified', { 
         success: true, 
-        token: response.data.token,
-        token_type: response.data.token_type,
+        recognized: recognized,
+        user_id: user_id,
+        confidence: confidence,
+        token: token,
+        token_type: token_type,
       });
 
       // Close the dialog after successful verification
       handleClose()
     } else {
       // Verification failed - continue detection loop
-      ElMessage.warning(response.data.message || 'Face recognition failed, please try again');
+      ElMessage.warning(response.message || 'Face recognition failed, please try again');
     }
   } catch (error) {
-    console.error('Error during face verification:', error);
+    // console.error('Error during face verification:', error);
 
     if (error.response?.data?.message) {
       ElMessage.error(error.response.data.message);
@@ -398,56 +314,15 @@ const handleClose = () => {
   dialogVisible.value = false
 }
 
+// Initialize when component mounts
+onMounted(async () => {
+  await loadModels()
+})
+
 // Clean up camera stream when component unmounts
 onUnmounted(() => {
   stopCamera()
 })
-
-// Function to draw ellipse with green border
-function drawEllipseWithGradient(ctx, centerX, centerY, radiusX, radiusY) {
-  // Draw a green ellipse border for face detection
-  ctx.save();
-
-  // Draw the green border for the ellipse
-  ctx.strokeStyle = '#00ff00'; // Bright green color
-  ctx.lineWidth = 3;
-  ctx.beginPath();
-  ctx.ellipse(centerX, centerY, radiusX, radiusY, 0, 0, Math.PI * 2);
-  ctx.stroke();
-
-  // Add L-shaped corners for better visibility
-  ctx.beginPath();
-
-  // Top-left corner
-  ctx.moveTo(centerX - radiusX, centerY - radiusY + 10);
-  ctx.lineTo(centerX - radiusX, centerY - radiusY);
-  ctx.lineTo(centerX - radiusX + 10, centerY - radiusY);
-
-  // Top-right corner
-  ctx.moveTo(centerX + radiusX - 10, centerY - radiusY);
-  ctx.lineTo(centerX + radiusX, centerY - radiusY);
-  ctx.lineTo(centerX + radiusX, centerY - radiusY + 10);
-
-  // Bottom-left corner
-  ctx.moveTo(centerX - radiusX, centerY + radiusY - 10);
-  ctx.lineTo(centerX - radiusX, centerY + radiusY);
-  ctx.lineTo(centerX - radiusX + 10, centerY + radiusY);
-
-  // Bottom-right corner
-  ctx.moveTo(centerX + radiusX - 10, centerY + radiusY);
-  ctx.lineTo(centerX + radiusX, centerY + radiusY);
-  ctx.lineTo(centerX + radiusX, centerY + radiusY - 10);
-
-  ctx.stroke();
-
-  // Draw a small circle at the center of the ellipse
-  ctx.beginPath();
-  ctx.fillStyle = '#00ff00'; // Same bright green color
-  ctx.arc(centerX, centerY, 4, 0, Math.PI * 2); // Small circle with radius 4
-  ctx.fill();
-
-  ctx.restore();
-}
 </script>
 
 <style scoped>
