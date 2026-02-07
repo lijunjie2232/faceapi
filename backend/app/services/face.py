@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 from fastapi import HTTPException, UploadFile
 
+from ..core import _CONFIG_
 from ..core.config import Config
 from ..db import FACE_FEATURES_COLLECTION, get_milvus_client
 from ..face_rec import _MODEL_ as model
@@ -23,9 +24,6 @@ from ..utils import (
     inference,
     load_collection,
 )
-
-# Get config instance
-_CONFIG_ = Config()
 
 
 async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
@@ -57,9 +55,11 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         return {
             "recognized": False,
             "message": "No face detected in the image",
-            "token": None,
+            "data": {
+                "token": None,
+                "token_type": "Bearer",
+            },
             "code": 400,
-            "token_type": "bearer"
         }
 
     # Extract features from the face
@@ -89,8 +89,10 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         return {
             "recognized": False,
             "message": "Face not recognized in the database",
-            "token": None,
-            "token_type": "bearer",
+            "data": {
+                "token": None,
+                "token_type": "Bearer",
+            },
             "code": 401,
         }
 
@@ -111,8 +113,10 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
         "message": f"Face recognized as user(id={user_id})",
         "user_id": user_id,
         "confidence": 1 - best_match["distance"],  # Convert distance to similarity
-        "token": access_token,
-        "token_type": "bearer",
+        "data": {
+            "token": access_token,
+            "token_type": "Bearer",
+        },
         "code": 200,
     }
 
@@ -169,6 +173,23 @@ async def update_face_embedding_service(
     milvus_client = get_milvus_client()
 
     await load_collection(FACE_FEATURES_COLLECTION)
+
+    # Search for similar faces in the collection
+    search_results = milvus_client.search(
+        collection_name=FACE_FEATURES_COLLECTION,
+        data=features,
+        limit=1,  # Only need the closest match
+        output_fields=["user_id"],
+        search_params={
+            "metric_type": "COSINE",
+            "params": {"radius": _CONFIG_.MODEL_THRESHOLD},
+        },
+    )
+    if any(search_results) and not _CONFIG_.ALLOW_FACE_DEDUPICATION:
+        raise HTTPException(
+            status_code=400,
+            detail="Face already exists in the database. Please use a different face or contact the administrator.",
+        )
 
     # Insert the new face feature into the collection
     entities = [
