@@ -227,7 +227,7 @@ const verificationResult = ref(null);
 const userInfo = ref(null); // ユーザー情報用の新しいref
 const loading = ref(false);
 const showPopOutWindow = ref(false);
-const API_BASE_URL = ref(import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000');
+const API_BASE_URL = ref(import.meta.env.VITE_API_BASE_URL || "";
 
 const fileToBase64 = (file) => {
   return new Promise((resolve, reject) => {

@@ -49,7 +49,7 @@ const loginRules = {
   ],
   password: [
     { required: true, message: 'パスワードを入力してください', trigger: 'blur' },
-    { min: 6, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
+    { min: 4, message: 'パスワードは少なくとも6文字である必要があります', trigger: 'blur' }
   ]
 }
 
@@ -67,7 +67,7 @@ const handleLogin = async () => {
     formData.append('password', loginForm.password)
 
     // APIベースURLの環境変数を使用
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/login`, formData, {
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/user/login`, formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }

@@ -64,7 +64,7 @@ const router = useRouter();
 const route = useRoute();
 const userInfo = ref({});
 const loading = ref(true);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 // 子コンポーネントにuserInfoを提供
 provide('userInfo', userInfo);

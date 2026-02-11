@@ -276,7 +276,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, CircleCheckFilled, RemoveFilled, Operation, ArrowDown, Check, Close } from '@element-plus/icons-vue'
 import FaceDetectionPopOut from './FaceDetectionPopOut.vue'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000'
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const users = ref([])
 const loading = ref(false)

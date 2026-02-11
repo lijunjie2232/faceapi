@@ -93,7 +93,7 @@ const handleSignup = async () => {
     }
 
     // APIベースURLの環境変数を使用
-    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/v1/user/signup`, userData, {
+    const response = await axios.post(`${import.meta.env.VITE_API_BASE_URL || ""}/api/v1/user/signup`, userData, {
       headers: {
         'Content-Type': 'application/json'
       }

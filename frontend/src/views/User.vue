@@ -203,7 +203,7 @@ const recognitionHistory = ref([
   { date: '2023-11-29 08:22:33', status: 'Success', confidence: '95.7%', details: 'メインゲート' }
 ]);
 const profileFormRef = ref(null);
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
 
 const router = useRouter();
 
