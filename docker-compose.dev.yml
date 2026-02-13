@@ -1,0 +1,153 @@
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: face-rec-postgres
+    environment:
+      POSTGRES_DB: faceapi
+      POSTGRES_USER: faceuser
+      POSTGRES_PASSWORD: facepass123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U faceuser -d faceapi"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Milvus vector database
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.25
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/etcd:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.6.11
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MQ_TYPE: woodpecker
+    volumes:
+      - ${DOCKER_VOLUME_DIRECTORY:-.}/volumes/milvus:/var/lib/milvus
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    depends_on:
+      - "etcd"
+      - "minio"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      start_period: 90s
+      timeout: 20s
+      retries: 3
+
+  # Backend service with GPU support
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: face-rec-backend
+    environment:
+      - SQL_BACKEND=asyncpg
+      - SQL_HOST=postgres
+      - SQL_PORT=5432
+      - SQL_USERNAME=faceuser
+      - SQL_PASSWORD=facepass123
+      - SQL_DATABASE=faceapi
+      - MILVUS_HOST=standalone
+      - MILVUS_PORT=19530
+      - MODEL_PATH=/faceapi/model.onnx
+      - MODEL_LOADER=onnx
+      - MODEL_THRESHOLD=0.2285
+      - MODEL_DEVICE=cpu
+      - MODEL_EMB_DIM=512
+      - API_V1_STR=/api/v1
+      - PROJECT_NAME=FaceAPI (dev)
+      - JWT_SECRET_KEY=ec127460205be2eace68ef511e583f994b7958a8fa627275dd2dd92c767e6bae
+      - JWT_ALGORITHM=HS256
+      - ACCESS_TOKEN_EXPIRE_MINUTES=10080
+      - PASSWORD_HASH_ALGORITHM=sha256_crypt
+      - LISTEN_HOST=0.0.0.0
+      - LISTEN_PORT=8000
+      - ALLOW_FACE_DEDUPICATION=false
+    volumes:
+      - ./backend/faceapi:/faceapi/faceapi  # For development - remove in production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      standalone:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    # GPU runtime configuration
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              device_ids: ["0"]
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Frontend service (development)
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: face-rec-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_APP_TITLE=Face Recognition System (dev)
+      - VITE_APP_VERSION="1.0.0"
+      - VITE_FACE_API_MODELS_PATH=/models
+
+volumes:
+  postgres_data:
+  etcd:
+  minio:
+  milvus:
