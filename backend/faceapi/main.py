@@ -4,17 +4,16 @@
 ミドルウェアを登録し、顔認識システムのすべてのAPIルートを含みます。
 """
 
+import asyncio
 from contextlib import asynccontextmanager
 
 import uvicorn
+from faceapi.core import _CONFIG_
+from faceapi.db import TORTOISE_ORM, create_init_account, milvus_init, sql_init
+from faceapi.routes import admin, face, user
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from tortoise.contrib.fastapi import register_tortoise
-import asyncio
-
-from faceapi.core import _CONFIG_
-from faceapi.db import TORTOISE_ORM, milvus_init, sql_init, create_init_account
-from faceapi.routes import admin, face, user
 
 
 @asynccontextmanager

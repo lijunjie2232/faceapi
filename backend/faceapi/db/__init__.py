@@ -11,7 +11,6 @@ from .init_sql import TORTOISE_ORM
 from .init_sql import init_db as sql_init
 from .init_account import create_init_account
 
-
 __ALL__ = [
     "milvus_init",
     "sql_init",

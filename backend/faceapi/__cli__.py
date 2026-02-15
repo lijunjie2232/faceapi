@@ -10,8 +10,6 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-
-
 from faceapi.core import _CONFIG_
 
 

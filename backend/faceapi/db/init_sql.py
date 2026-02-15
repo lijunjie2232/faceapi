@@ -51,6 +51,7 @@ TORTOISE_ORM = {
     },
 }
 
+
 async def init_db():
     """SQLデータベースを初期化し、マイグレーションを実行"""
     async with Command(
