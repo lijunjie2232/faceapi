@@ -28,8 +28,7 @@ const modelFiles = [
 ];
 
 // モデルのベースURL
-const baseUrl = 'https://raw.githubusercontent.com/vladmandic/face-api/master/models/';
-
+const baseUrl = 'https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/';
 console.log('face-api.jsモデルをダウンロード中...');
 
 modelFiles.forEach((filename, index) => {

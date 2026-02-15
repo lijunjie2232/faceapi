@@ -14,7 +14,7 @@ $models = @(
     # @{ Path = "public/models/face_recognition_model-shard2"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_recognition_model-shard2" },
     @{ Path = "public/models/tiny_face_detector_model-weights_manifest.json"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/tiny_face_detector_model-weights_manifest.json" },
     @{ Path = "public/models/tiny_face_detector_model-shard1"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/tiny_face_detector_model-shard1" },
-    # @{ Path = "public/models/face_expression_model-weights_manifest.json"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_expression_model-weights_manifest.json" },
+backend    # @{ Path = "public/models/face_expression_model-weights_manifest.json"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_expression_model-weights_manifest.json" },
     # @{ Path = "public/models/face_expression_model-shard1"; Url = "https://raw.githubusercontent.com/justadudewhohacks/face-api.js/master/weights/face_expression_model-shard1" }
 )
 
