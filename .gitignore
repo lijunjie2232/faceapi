@@ -52,6 +52,9 @@ logs/
 
 # Local configuration
 .env
+.env.test
+.env.dev
+.env.prod
 .env.local
 .env.production
 .env.development
@@ -84,9 +87,7 @@ dist/
 *.min.css
 
 # Milvus volumes
-volumes/milvus/
-volumes/etcd/
-volumes/minio/
+volume*/
 
 # config files
 *_config.yaml
@@ -99,5 +100,6 @@ config.toml
 *.sqlite3*
 migrations/
 
-# test
-test/
+# test & debug
+test*
+debug*
