@@ -8,7 +8,7 @@
 
 from loguru import logger
 
-from .config import Config
+from .config import Config, CONFIGURABLE_FIELDS
 
 _CONFIG_ = Config()
 
@@ -17,4 +17,5 @@ logger.info(_CONFIG_)
 
 __ALL__ = [
     "_CONFIG_",
+    "CONFIGURABLE_FIELDS"
 ]
