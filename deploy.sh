@@ -28,6 +28,69 @@ print_header() {
     echo -e "${BLUE}[HEADER]${NC} $1"
 }
 
+# Function to publish Docker images to Docker Hub
+publish_images() {
+    local version=$1
+    local docker_hub_user=$2
+    
+    # Validate arguments
+    if [[ -z "$version" ]] || [[ -z "$docker_hub_user" ]]; then
+        print_error "Both version and Docker Hub username are required"
+        print_status "Usage: $0 publish <version> <docker_hub_user>"
+        print_status "Example: $0 publish 1.0.0 myusername"
+        return 1
+    fi
+    
+    # Validate that version follows semantic versioning pattern
+    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        print_warning "Version '$version' does not follow semantic versioning (X.Y.Z)"
+        print_warning "Continuing with provided version..."
+    fi
+    
+    print_header "Publishing Docker Images"
+    print_status "Version: $version"
+    print_status "Docker Hub User: $docker_hub_user"
+    
+    # Check if required Docker images exist
+    if ! docker images | grep -q "face_recognition_system-backend.*latest"; then
+        print_error "face_recognition_system-backend:latest image not found"
+        print_status "Please build the images first using 'docker-compose build'"
+        return 1
+    fi
+    
+    if ! docker images | grep -q "face_recognition_system-web.*latest"; then
+        print_error "face_recognition_system-web:latest image not found"
+        print_status "Please build the images first using 'docker-compose build'"
+        return 1
+    fi
+    
+    # Tag and push backend image
+    print_status "Tagging backend image..."
+    docker tag face_recognition_system-backend:latest ${docker_hub_user}/faceapi-server:${version}
+    docker tag face_recognition_system-backend:latest ${docker_hub_user}/faceapi-server:latest
+    
+    print_status "Pushing backend images..."
+    docker push ${docker_hub_user}/faceapi-server:${version}
+    docker push ${docker_hub_user}/faceapi-server:latest
+    
+    # Tag and push web image
+    print_status "Tagging web image..."
+    docker tag face_recognition_system-web:latest ${docker_hub_user}/faceapi-web:${version}
+    docker tag face_recognition_system-web:latest ${docker_hub_user}/faceapi-web:latest
+    
+    print_status "Pushing web images..."
+    docker push ${docker_hub_user}/faceapi-web:${version}
+    docker push ${docker_hub_user}/faceapi-web:latest
+    
+    print_status "✅ Successfully published all images to Docker Hub!"
+    print_status "Backend images:"
+    print_status "  - ${docker_hub_user}/faceapi-server:v${version}"
+    print_status "  - ${docker_hub_user}/faceapi-server:latest"
+    print_status "Web images:"
+    print_status "  - ${docker_hub_user}/faceapi-web:v${version}"
+    print_status "  - ${docker_hub_user}/faceapi-web:latest"
+}
+
 #!/bin/bash
 
 # Function to display environment configuration based on mode
@@ -452,6 +515,7 @@ show_help() {
     echo "  logs         Show development logs (use 'logs prod' for production)"
     echo "  status       Show service status (use 'status prod' for production)"
     echo "  stop         Stop development services (use 'stop prod' for production)"
+    echo "  publish      Publish Docker images to Docker Hub (publish <version> <docker_hub_user>)"
     echo "  help         Show this help message"
     echo ""
     echo "Options:"
@@ -469,6 +533,7 @@ show_help() {
     echo "  $0 logs prod              # Show production logs"
     echo "  $0 logs prod --gpu        # Show production GPU logs"
     echo "  $0 status --gpu           # Show GPU development status"
+    echo "  $0 publish 1.0.0 myuser   # Publish images to Docker Hub"
 }
 
 # Global variables for GPU support
@@ -541,6 +606,19 @@ case "$COMMAND" in
         ;;
     stop)
         stop_services "${ARGS[1]}" "$USE_GPU"
+        ;;
+    publish)
+        # Handle publish command with version and user arguments
+        if [[ ${#ARGS[@]} -gt 2 ]]; then
+            VERSION="${ARGS[1]}"
+            DOCKER_HUB_USER="${ARGS[2]}"
+            publish_images "$VERSION" "$DOCKER_HUB_USER"
+        else
+            print_error "Publish command requires version and Docker Hub username"
+            print_status "Usage: $0 publish <version> <docker_hub_user>"
+            print_status "Example: $0 publish v1.0.0 myusername"
+            exit 1
+        fi
         ;;
     help|"")
         show_help
