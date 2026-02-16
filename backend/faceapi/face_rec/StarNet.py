@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from timm.models.layers import DropPath, trunc_normal_
 
-from .FaceRecModel import register_model
+# from .FaceRecModel import register_model
 
 
 class ConvBN(torch.nn.Sequential):
@@ -110,8 +110,8 @@ class StarNet(nn.Module):
             nn.init.constant_(m.bias, 0)
             nn.init.constant_(m.weight, 1.0)
 
-    def forward(self, x, cuda=True):
-        with torch.amp.autocast("cuda" if cuda else "cpu", enabled=self.fp16):
+    def forward(self, x, device="cuda"):
+        with torch.autocast(device, enabled=self.fp16):
             x = self.stem(x)
             for stage in self.stages:
                 x = stage(x)
