@@ -34,44 +34,44 @@ async def init_db():
         # 最初にデータベースなしで接続し、存在しない場合はデータベースを作成
         connections.connect(
             alias="default",
-            host=_CONFIG_.MILVUS_HOST,
-            port=_CONFIG_.MILVUS_PORT,
-            user=_CONFIG_.MILVUS_USER,
-            password=_CONFIG_.MILVUS_PASSWORD,
+            host=_CONFIG_.MILVUS_DB_HOST,
+            port=_CONFIG_.MILVUS_DB_PORT,
+            user=_CONFIG_.MILVUS_DB_USER,
+            password=_CONFIG_.MILVUS_DB_PASSWORD,
         )
 
         # 存在しない場合はデータベースを作成
         temp_client = MilvusClient(
-            uri=f"http://{_CONFIG_.MILVUS_HOST}:{_CONFIG_.MILVUS_PORT}",
-            user=_CONFIG_.MILVUS_USER,
-            password=_CONFIG_.MILVUS_PASSWORD,
+            uri=f"http://{_CONFIG_.MILVUS_DB_HOST}:{_CONFIG_.MILVUS_DB_PORT}",
+            user=_CONFIG_.MILVUS_DB_USER,
+            password=_CONFIG_.MILVUS_DB_PASSWORD,
         )
 
         # データベースが存在するか確認し、存在しない場合は作成
         existing_dbs = temp_client.list_databases()
-        if _CONFIG_.MILVUS_DB_NAME not in existing_dbs:
+        if _CONFIG_.MILVUS_DB_DB_NAME not in existing_dbs:
             logger.info(
-                f"データベース {_CONFIG_.MILVUS_DB_NAME} が存在しないため、作成しています..."
+                f"データベース {_CONFIG_.MILVUS_DB_DB_NAME} が存在しないため、作成しています..."
             )
-            temp_client.create_database(_CONFIG_.MILVUS_DB_NAME)
+            temp_client.create_database(_CONFIG_.MILVUS_DB_DB_NAME)
 
         # 特定のデータベースに接続
         connections.disconnect("default")
         connections.connect(
             alias="default",
-            host=_CONFIG_.MILVUS_HOST,
-            port=_CONFIG_.MILVUS_PORT,
-            user=_CONFIG_.MILVUS_USER,
-            password=_CONFIG_.MILVUS_PASSWORD,
-            db_name=_CONFIG_.MILVUS_DB_NAME,
+            host=_CONFIG_.MILVUS_DB_HOST,
+            port=_CONFIG_.MILVUS_DB_PORT,
+            user=_CONFIG_.MILVUS_DB_USER,
+            password=_CONFIG_.MILVUS_DB_PASSWORD,
+            db_name=_CONFIG_.MILVUS_DB_DB_NAME,
         )
 
         # 特定のデータベースに接続されたグローバルMilvusクライアントを初期化
         MILVUS_CLIENT = MilvusClient(
-            uri=f"http://{_CONFIG_.MILVUS_HOST}:{_CONFIG_.MILVUS_PORT}",
-            user=_CONFIG_.MILVUS_USER,
-            password=_CONFIG_.MILVUS_PASSWORD,
-            db_name=_CONFIG_.MILVUS_DB_NAME,
+            uri=f"http://{_CONFIG_.MILVUS_DB_HOST}:{_CONFIG_.MILVUS_DB_PORT}",
+            user=_CONFIG_.MILVUS_DB_USER,
+            password=_CONFIG_.MILVUS_DB_PASSWORD,
+            db_name=_CONFIG_.MILVUS_DB_DB_NAME,
         )
 
         logger.info("Milvusへの接続に成功しました")
