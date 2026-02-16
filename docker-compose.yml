@@ -1,0 +1,158 @@
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:18-alpine
+    container_name: face-rec-postgres-prod
+    environment:
+      POSTGRES_DB: faceapi
+      POSTGRES_USER: faceuser
+      POSTGRES_PASSWORD: ${SQL_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+    shm_size: 128mb
+
+  # Milvus vector database
+  etcd:
+    container_name: milvus-etcd-prod
+    image: quay.io/coreos/etcd:v3.5.25
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - etcd:/etcd
+    command: etcd -advertise-client-urls=http://etcd:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+
+  minio:
+    container_name: milvus-minio-prod
+    image: minio/minio:RELEASE.2024-12-18T13-15-44Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - minio:/minio_data
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+
+  standalone:
+    container_name: milvus-standalone-prod
+    image: milvusdb/milvus:v2.6.11
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+      - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+      MQ_TYPE: woodpecker
+    volumes:
+      - milvus:/var/lib/milvus
+    depends_on:
+      - "etcd"
+      - "minio"
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+
+  # Backend service
+  backend:
+    container_name: face-rec-backend-prod
+    image: lijunjie2232/faceapi-server:v1.0
+    env_file:
+      - .env.prod
+    environment:
+      - SQL_BACKEND=${SQL_BACKEND:-asyncpg}
+      - SQL_HOST=${SQL_HOST:-postgres}
+      - SQL_PORT=${SQL_PORT:-5432}
+      - SQL_USERNAME=${SQL_USERNAME:-faceuser}
+      - SQL_PASSWORD=${SQL_PASSWORD:-facepass123}
+      - SQL_DATABASE=${SQL_DATABASE:-faceapi}
+      - MILVUS_DB_HOST=${MILVUS_DB_HOST:-standalone}
+      - MILVUS_DB_PORT=${MILVUS_DB_PORT:-19530}
+      - MILVUS_DB_USER=${MILVUS_DB_USER:-root}
+      - MILVUS_DB_PASSWORD=${MILVUS_DB_PASSWORD:-milvus}
+      - MILVUS_DB_DB_NAME=${MILVUS_DB_DB_NAME:-faceapi}
+      - MODEL_PATH=${MODEL_PATH:-/faceapi/model.onnx}
+      - MODEL_LOADER=${MODEL_LOADER:-onnx}
+      - MODEL_THRESHOLD=${MODEL_THRESHOLD:-0.3}
+      - MODEL_DEVICE=${MODEL_DEVICE:-cpu}
+      - MODEL_EMB_DIM=${MODEL_EMB_DIM:-512}
+      - API_V1_STR=${API_V1_STR:-/api/v1}
+      - PROJECT_NAME=${PROJECT_NAME:-FaceAPI (dev)}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-0000000000000000000000000000000000000000000000000000000000000000}
+      - JWT_ALGORITHM=${JWT_ALGORITHM:-HS256}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES:-10080}
+      - PASSWORD_HASH_ALGORITHM=${PASSWORD_HASH_ALGORITHM:-sha256_crypt}
+      - LISTEN_HOST=${BACKEND_HOST:-0.0.0.0}
+      - LISTEN_PORT=${BACKEND_PORT:-8000}
+      - ALLOWED_ORIGINS=["*"]
+      - ALLOW_FACE_DEDUPICATION=${ALLOW_FACE_DEDUPICATION-:false}
+    command: "faceapi"
+    volumes:
+      - migrations:/faceapi/migrations
+    depends_on:
+      postgres:
+        condition: service_started
+      standalone:
+        condition: service_started
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+
+  # Combined frontend + nginx service
+  web:
+    container_name: face-rec-web-prod
+    image: lijunjie2232/faceapi-web:v1.0
+    ports:
+      - "${HOST_PORT:-80}:80"
+    environment:
+      - NGINX_HOST=${DOMAIN_NAME:-localhost}
+      - BACKEND_HOST=backend
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
+    volumes:
+      - ./nginx/templates:/etc/nginx/templates:ro
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - face-rec-network
+
+volumes:
+  postgres_data:
+    driver: local
+    name: ${POSTGRES_VOLUME_NAME:-postgres_data}
+  etcd:
+    driver: local
+    name: ${ETCD_VOLUME_NAME:-etcd}
+  minio:
+    driver: local
+    name: ${MINIO_VOLUME_NAME:-minio}
+  milvus:
+    driver: local
+    name: ${MILVUS_VOLUME_NAME:-milvus}
+  migrations:
+    driver: local
+    name: ${MIGRATIONS_VOLUME_NAME:-migrations}
+
+
+networks:
+  face-rec-network:
+    driver: bridge
