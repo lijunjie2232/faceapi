@@ -1,20 +1,22 @@
-# Docker Support Documentation
+# Docker サポートドキュメント
 
 このドキュメントは、顔認識システムのDockerデプロイメントに関する詳細な説明を提供します。実際のプロジェクト構成に基づいて、デプロイメントスクリプト、環境変数設定、およびDocker関連の構成について網羅的に解説します。
 
 ## 目次
 
 1. [概要](#概要)
-2. [デプロイメントスクリプト](#デプロイメントスクリプト)
-3. [環境変数設定](#環境変数設定)
-4. [Docker Compose構成](#docker-compose構成)
-5. [サービスアーキテクチャ](#サービスアーキテクチャ)
-6. [GPUサポート](#gpuサポート)
-7. [ネットワーク構成](#ネットワーク構成)
-8. [ストレージ管理](#ストレージ管理)
-9. [セキュリティ設定](#セキュリティ設定)
-10. [モニタリングとロギング](#モニタリングとロギング)
-11. [トラブルシューティング](#トラブルシューティング)
+2. [新しいdocker-compose.ymlファイル](#新しいdocker-composeymlファイル)
+3. [Dockerイメージの公開](#dockerイメージの公開)
+4. [デプロイメントスクリプト](#デプロイメントスクリプト)
+5. [環境変数設定](#環境変数設定)
+6. [Docker Compose構成](#docker-compose構成)
+7. [サービスアーキテクチャ](#サービスアーキテクチャ)
+8. [GPUサポート](#gpuサポート)
+9. [ネットワーク構成](#ネットワーク構成)
+10. [ストレージ管理](#ストレージ管理)
+11. [セキュリティ設定](#セキュリティ設定)
+12. [モニタリングとロギング](#モニタリングとロギング)
+13. [トラブルシューティング](#トラブルシューティング)
 
 ## 概要
 
@@ -30,6 +32,94 @@
 - **リバースプロキシ**: Nginx（本番環境）
 
 すべてのコンポーネントはDockerコンテナとして管理され、Docker Composeでオーケストレーションされます。
+
+## 新しいdocker-compose.ymlファイル
+
+プロジェクトには、Docker Hubに公開されたイメージを使用する新しい統合構成ファイルが追加されました。
+
+### 特徴
+
+- **事前ビルド済みイメージ**: Docker Hubから直接取得される最適化されたイメージを使用
+- **簡素化されたデプロイ**: ビルドステップをスキップして迅速なデプロイが可能
+- **一貫性のある環境**: 公式イメージを使用して環境の一貫性を確保
+- **軽量な構成**: 開発・本番環境の両方に適したシンプルな構成
+
+### サービス構成
+
+```
+services:
+  postgres:           # PostgreSQLデータベース
+  etcd:               # Milvusのメタデータストア
+  minio:              # オブジェクトストレージ
+  standalone:         # Milvusベクトルデータベース
+  backend:            # バックエンドAPIサービス
+  web:                # フロントエンド+nginx統合サービス
+```
+
+### 使用方法
+
+```
+# 環境変数ファイルの準備
+cp .env.prod.example .env.prod
+
+# サービスの起動
+docker-compose up -d
+
+# サービスの停止
+docker-compose down
+```
+
+## Dockerイメージの公開
+
+`deploy.sh`スクリプトには、ローカルでビルドしたDockerイメージをDocker Hubに公開するための新しい`publish`コマンドが追加されました。
+
+### publishコマンド
+
+ローカルでビルドしたイメージをDocker Hubにタグ付けして公開します。
+
+#### 使用方法
+
+```
+# 基本的な使用法
+./deploy.sh publish <バージョン> <docker_hubユーザー名>
+
+# 例
+./deploy.sh publish 1.0.0 myusername
+```
+
+#### 処理内容
+
+1. **引数の検証**: バージョン番号とDocker Hubユーザー名を確認
+2. **セマンティックバージョニングのチェック**: X.Y.Z形式の検証
+3. **イメージの存在確認**: ローカルイメージが存在するかチェック
+4. **イメージのタグ付け**: 
+   - `faceapi-server:<version>` と `faceapi-server:latest`
+   - `faceapi-web:<version>` と `faceapi-web:latest`
+5. **Docker Hubへのプッシュ**: タグ付けされたイメージをアップロード
+
+#### 成功メッセージ例
+
+```
+✅ Successfully published all images to Docker Hub!
+Backend images:
+  - myusername/faceapi-server:v1.0.0
+  - myusername/faceapi-server:latest
+Web images:
+  - myusername/faceapi-web:v1.0.0
+  - myusername/faceapi-web:latest
+```
+
+### 前提条件
+
+- Docker Hubアカウントが必要
+- `docker login`で認証済みであること
+- ローカルでイメージがビルド済みであること
+
+### セキュリティに関する注意
+
+- Docker Hubの認証情報を安全に管理してください
+- 本番用のシークレットは公開イメージに含めないでください
+- イメージのタグ付けには意味のあるバージョン番号を使用することを推奨
 
 ## デプロイメントスクリプト
 
@@ -61,7 +151,7 @@
 
 #### 使用方法
 
-```bash
+```
 # 開発環境のデプロイ（CPU版）
 ./deploy.sh dev
 
@@ -244,7 +334,7 @@ DOMAIN_NAME=""  # カスタムドメイン設定
 
 ### サービス構成例（開発環境）
 
-```yaml
+```
 version: '3.8'
 
 services:
@@ -387,24 +477,48 @@ volumes:
 
 ### コンテナ間の依存関係
 
-```
-┌─────────────┐    ┌─────────────┐    
-│   Frontend  │◄──►│   Backend   │    
-│   (Vue.js)  │    │  (FastAPI)  │    
-└─────────────┘    └─────────────┘    
-                         │              
-┌─────────────┐    ┌─────────────┐    
-│  PostgreSQL │    │   Milvus    │    
-│ (UserData)  │    │ (FaceVector)│    
-└─────────────┘    └─────────────┘    
-                         │              
-┌─────────────┐    ┌─────────────┐    
-│    etcd     │    │    MinIO    │    
-│ (Metadata)  │    │ (Storage)   │    
-└─────────────┘    └─────────────┘    
+```mermaid
+graph TD
 
-本番環境ではNginxがフロントエンドとバックエンドの前段に配置されます。
+    %% データ永続化層
+    subgraph Data [データストア]
+        PG[PostgreSQL（UserData）]
+    end
+
+    %% アプリケーションサービス層
+    subgraph Backend_Services [バックエンドサービス]
+        SERVE[serve（FastAPI Backend）]
+    end
+
+    subgraph Frontend_Services [フロントエンドサービス]
+        NGINX[Nginx（Reverse Proxy）]
+        WEB[dist（Vue Dist）]
+        
+    end
+
+    %% インフラストラクチャ層
+    subgraph Infrastructure [Milvus 基礎コンポーネント]
+        MILVUS[Milvus（FaceVector）]
+        ETCD[etcd（Metadata）]
+        MINIO[MinIO（Object Storage）]
+    end
+
+
+    %% 依存関係
+    SERVE --> PG
+    SERVE --> MILVUS
+    BR --> NGINX
+    
+    %% トラフィックの入り口
+    BR[ブラウザ]
+    
+    %% ルーティングロジック
+    NGINX -- 静的リソース --> WEB
+    NGINX -- API転送 --> SERVE
+    
+
 ```
+本番環境ではNginxがフロントエンドとバックエンドの前段に配置されます。
 
 ### サービスポートマッピング
 
@@ -469,7 +583,7 @@ services:
 
 **backend/Dockerfile-gpu** の主な違い：
 
-```dockerfile
+```
 # PyTorch GPU対応のインストール
 RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
 RUN pip install timm  # Vision Transformerモデル用
@@ -483,14 +597,14 @@ RUN pip install -e . -v --no-build-isolation
 
 ### 開発環境ネットワーク
 
-```yaml
+```
 # 開発環境ではデフォルトのbridgeネットワークを使用
 # 各サービスは同じネットワーク上に配置され、サービス名で相互参照可能
 ```
 
 ### 本番環境ネットワーク
 
-```yaml
+```
 networks:
   face-rec-network:
     driver: bridge
@@ -510,7 +624,7 @@ services:
 
 ### セキュリティ設定
 
-```yaml
+```
 services:
   backend:
     # 外部からの直接アクセスを制限
@@ -528,7 +642,7 @@ services:
 
 ### ボリューム構成
 
-```yaml
+```
 volumes:
   # 永続化ボリューム
   postgres_data:
@@ -548,7 +662,7 @@ volumes:
 
 ### データバックアップ戦略
 
-```bash
+```
 #!/bin/bash
 # backup.sh
 
@@ -582,7 +696,7 @@ tar -czf $BACKUP_DIR/app_data.tar.gz ./backend/uploads ./models
 
 ### コンテナセキュリティ
 
-```yaml
+```
 services:
   backend:
     # 非rootユーザーでの実行
@@ -607,7 +721,7 @@ services:
 
 ### 環境変数の保護
 
-```bash
+```
 # .envファイルの権限設定
 chmod 600 .env.dev
 chmod 600 .env.prod
@@ -619,7 +733,7 @@ openssl rand -base64 32  # データベースパスワード
 
 ### ネットワークセキュリティ
 
-```yaml
+```
 # 開発環境での外部アクセス制限
 services:
   postgres:
@@ -638,7 +752,7 @@ services:
 
 ### ログ構成
 
-```yaml
+```
 services:
   backend:
     logging:
@@ -653,7 +767,7 @@ services:
 
 ### ヘルスチェック
 
-```yaml
+```
 services:
   backend:
     healthcheck:
@@ -673,7 +787,7 @@ services:
 
 ### リソース制限
 
-```yaml
+```
 services:
   backend:
     deploy:
@@ -691,7 +805,7 @@ services:
 
 ### モニタリングコマンド
 
-```bash
+```
 # リソース使用量の監視
 docker stats
 
@@ -712,7 +826,7 @@ docker network inspect face-rec-network
 
 #### 1. コンテナ起動失敗
 
-```bash
+```
 # ログ確認
 ./deploy.sh logs
 
@@ -731,7 +845,7 @@ docker-compose down -v  # ボリュームも削除
 
 #### 2. データベース接続エラー
 
-```bash
+```
 # PostgreSQLの状態確認
 docker-compose exec postgres pg_isready -U faceuser -d faceapi
 
@@ -744,7 +858,7 @@ docker-compose exec standalone milvus status
 
 #### 3. GPU利用不可
 
-```bash
+```
 # GPU認識確認
 nvidia-smi
 
@@ -761,7 +875,7 @@ sudo systemctl status nvidia-docker
 
 #### 4. ポート競合
 
-```bash
+```
 # 使用中ポート確認
 sudo netstat -tlnp | grep :8000
 sudo lsof -i :5432
@@ -778,7 +892,7 @@ docker-compose port backend 8000
 
 #### 5. モデルダウンロードエラー
 
-```bash
+```
 # モデルダウンロードスクリプトの実行
 cd frontend
 node scripts/download_models.js
@@ -790,7 +904,7 @@ mkdir -p public/models
 
 ### デバッグコマンド集
 
-```bash
+```
 # 全サービス状態確認
 docker-compose ps
 
@@ -819,7 +933,7 @@ docker inspect [container_name]
 
 ### パフォーマンスチューティング
 
-```bash
+```
 # リソース制限の調整
 # docker-compose.ymlで以下を調整:
 services:
