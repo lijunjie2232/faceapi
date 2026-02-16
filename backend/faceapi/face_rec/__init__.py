@@ -1,6 +1,7 @@
 from ..core import _CONFIG_
 from .FaceRecModel import get_model, has_model, list_models, register_model
-from .StarNet import StarNet
+from .OnnxModel import load_onnx_model
+# from .StarNet import StarNet
 
 _MODEL_ = get_model(
     _CONFIG_.MODEL_LOADER,
@@ -16,5 +17,5 @@ __ALL__ = [
     "get_model",
     "register_model",
     "list_models",
-    "StarNet",
+    # "StarNet",
 ]
