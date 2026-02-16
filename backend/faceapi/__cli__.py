@@ -10,7 +10,54 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
-from faceapi.core import _CONFIG_
+from faceapi.core import Config, _CONFIG_
+import textwrap
+from pathlib import Path
+
+def generate_env_file(output_path: str = ".env") -> None:
+    """
+    設定項目を含む.envファイルを生成します。
+    
+    Args:
+        output_path (str): 出力ファイルのパス。デフォルトは".env"
+    """
+    
+    env_lines = [
+        "# Face Recognition System Environment Configuration",
+        "# Generated automatically - feel free to modify",
+        ""
+    ]
+    
+    for field_name in Config.CONFIGURABLE_FIELDS:
+        field_info = Config.model_fields[field_name]
+        description = field_info.description or ''
+        default_value = getattr(_CONFIG_, field_name)
+        
+        # コメントとして説明を追加
+        if description:
+            wrapped_desc = textwrap.fill(description, width=70)
+            for line in wrapped_desc.split('\n'):
+                env_lines.append(f"# {line}")
+        
+        # デフォルト値のフォーマット
+        if isinstance(default_value, str) and default_value:
+            formatted_value = f'{field_name}="{default_value}"'
+        elif isinstance(default_value, list):
+            formatted_value = f'{field_name}={",".join(map(str, default_value))}'
+        else:
+            formatted_value = f'{field_name}={default_value}'
+            
+        env_lines.append(formatted_value)
+        env_lines.append("")
+    
+    # ファイルに書き込み
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    
+    with open(output_file, 'w', encoding='utf-8') as f:
+        f.write('\n'.join(env_lines))
+    
+    print(f"Environment file generated successfully: {output_file.absolute()}")
 
 
 def create_parser() -> argparse.ArgumentParser:
