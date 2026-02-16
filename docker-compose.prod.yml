@@ -105,9 +105,11 @@ services:
       - PASSWORD_HASH_ALGORITHM=${PASSWORD_HASH_ALGORITHM:-sha256_crypt}
       - LISTEN_HOST=${BACKEND_HOST:-0.0.0.0}
       - LISTEN_PORT=${BACKEND_PORT:-8000}
-      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-["*"]}
+      - ALLOWED_ORIGINS=["*"]
       - ALLOW_FACE_DEDUPICATION=${ALLOW_FACE_DEDUPICATION-:false}
-      - ALLOWED_ORIGINS=[]
+    command: "faceapi"
+    volumes:
+      - migrations:/faceapi/migrations
     depends_on:
       postgres:
         condition: service_started
@@ -128,7 +130,7 @@ services:
     environment:
       - NGINX_HOST=${DOMAIN_NAME:-localhost}
       - BACKEND_HOST=backend
-      - BACKEND_PORT=8000
+      - BACKEND_PORT=${BACKEND_PORT:-8000}
     volumes:
       - ./nginx/templates:/etc/nginx/templates:ro
     depends_on:
@@ -150,9 +152,9 @@ volumes:
   milvus:
     driver: local
     name: ${MILVUS_VOLUME_NAME:-milvus}
-  frontend_dist:
+  migrations:
     driver: local
-    name: ${FRONTEND_VOLUME_NAME:-frontend_dist}
+    name: ${MIGRATIONS_VOLUME_NAME:-migrations}
 
 
 networks:

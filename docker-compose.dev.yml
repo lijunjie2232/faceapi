@@ -119,7 +119,7 @@ services:
       standalone:
         condition: service_healthy
     ports:
-      - "${BACKEND_DEV_PORT:-9724}:8000"
+      - "${BACKEND_DEV_PORT:-9724}:${BACKEND_PORT:-8000}"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
