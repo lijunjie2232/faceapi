@@ -13,18 +13,12 @@ import numpy as np
 from fastapi import HTTPException, UploadFile
 
 from ..core import _CONFIG_
-from ..core.config import Config
 from ..db import FACE_FEATURES_COLLECTION, get_milvus_client
 from ..face_rec import _MODEL_ as model
 from ..models import UserModel
-from ..utils import (
-    create_access_token,
-    detect_face,
-    image_to_base64,
-    inference,
-    load_collection,
-)
+from ..utils import create_access_token, detect_face, image_to_base64, load_collection
 
+from ..utils import inference
 
 async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
     """
@@ -64,7 +58,7 @@ async def verify_face_service(image: UploadFile) -> Dict[str, Any]:
 
     # 顔から特徴を抽出
     features = [
-        inference(model, face_img, device=_CONFIG_.MODEL_DEVICE).reshape(512)
+        inference(face_img)[0]
         for face_img in detected_faces
     ]
 
@@ -167,7 +161,7 @@ async def update_face_embedding_service(
     face_img = detected_faces[0]
 
     # 顔から特徴を抽出
-    features = inference(model, face_img, device=_CONFIG_.MODEL_DEVICE)
+    features = inference(face_img)
 
     # 共有Milvusクライアントを取得
     milvus_client = get_milvus_client()
@@ -175,6 +169,7 @@ async def update_face_embedding_service(
     await load_collection(FACE_FEATURES_COLLECTION)
 
     # コレクション内で類似の顔を検索
+    print(features)
     search_results = milvus_client.search(
         collection_name=FACE_FEATURES_COLLECTION,
         data=features,
@@ -186,10 +181,11 @@ async def update_face_embedding_service(
         },
     )
     if any(search_results) and not _CONFIG_.ALLOW_FACE_DEDUPICATION:
-        raise HTTPException(
-            status_code=400,
-            detail="Face already exists in the database. Please use a different face or contact the administrator.",
-        )
+        if search_results[0][0]["entity"]["user_id"] != user_id:
+            raise HTTPException(
+                status_code=400,
+                detail="Face already exists in the database. Please use a different face or contact the administrator.",
+            )
 
     # 新しい顔特徴をコレクションに挿入
     entities = [
