@@ -5,9 +5,8 @@
 ユーザーアカウントのデータベースモデルを定義します。
 """
 
-from tortoise import fields
+from tortoise import fields, run_async
 from tortoise.models import Model
-from tortoise import run_async
 
 
 class UserModel(Model):
@@ -37,4 +36,3 @@ class UserModel(Model):
 
     def __str__(self):
         return self.username
-
