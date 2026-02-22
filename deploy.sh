@@ -37,14 +37,16 @@ publish_images() {
     if [[ -z "$version" ]] || [[ -z "$docker_hub_user" ]]; then
         print_error "Both version and Docker Hub username are required"
         print_status "Usage: $0 publish <version> <docker_hub_user>"
-        print_status "Example: $0 publish 1.0.0 myusername"
+        print_status "Example: $0 publish v1.0.0 myusername"
         return 1
     fi
     
     # Validate that version follows semantic versioning pattern
-    if ! [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-        print_warning "Version '$version' does not follow semantic versioning (X.Y.Z)"
-        print_warning "Continuing with provided version..."
+    if ! [[ $version =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        print_error "Version '$version' does not follow semantic versioning (X.Y.Z)"
+        print_status "Usage: $0 publish <version> <docker_hub_user>"
+        print_status "Example: $0 publish v1.0.0 myusername"
+        return 1
     fi
     
     print_header "Publishing Docker Images"
