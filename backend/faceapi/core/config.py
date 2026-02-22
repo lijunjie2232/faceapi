@@ -10,40 +10,42 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict, YamlConfigSettingsSource
 
 
+CONFIGURABLE_FIELDS = [
+    "MILVUS_DB_HOST",
+    "MILVUS_DB_PORT",
+    "MILVUS_DB_USER",
+    "MILVUS_DB_PASSWORD",
+    "MILVUS_DB_DB_NAME",
+    "SQL_BACKEND",
+    "SQL_HOST",
+    "SQL_PORT",
+    "SQL_USERNAME",
+    "SQL_PASSWORD",
+    "SQL_DATABASE",
+    "MODEL_PATH",
+    "MODEL_LOADER",
+    "MODEL_THRESHOLD",
+    "MODEL_DEVICE",
+    "MODEL_EMB_DIM",
+    "API_V1_STR",
+    "PROJECT_NAME",
+    "JWT_SECRET_KEY",
+    "JWT_ALGORITHM",
+    "ACCESS_TOKEN_EXPIRE_MINUTES",
+    "PASSWORD_HASH_ALGORITHM",
+    "STRICT_MODE",
+    "LISTEN_HOST",
+    "LISTEN_PORT",
+    "ALLOWED_ORIGINS",
+    "ADMIN_USERNAME",
+    "ADMIN_PASSWORD",
+    "ADMIN_EMAIL",
+    "ADMIN_FULL_NAME",
+    "ALLOW_FACE_DEDUPICATION",
+]
+
+
 class Config(BaseSettings):
-
-    CONFIGURABLE_FIELDS = [
-        "MILVUS_DB_HOST",
-        "MILVUS_DB_PORT",
-        "MILVUS_DB_USER",
-        "MILVUS_DB_PASSWORD",
-        "MILVUS_DB_DB_NAME",
-        "SQL_BACKEND",
-        "SQL_HOST",
-        "SQL_PORT",
-        "SQL_USERNAME",
-        "SQL_PASSWORD",
-        "SQL_DATABASE",
-        "MODEL_PATH",
-        "MODEL_LOADER",
-        "MODEL_THRESHOLD",
-        "MODEL_DEVICE",
-        "EMB_DIM",
-        "SECRET_KEY",
-        "ALGORITHM",
-        "ACCESS_TOKEN_EXPIRE_MINUTES",
-        "PASSWORD_HASH_ALGORITHM",
-        "LISTEN_HOST",
-        "LISTEN_PORT",
-        "ALLOWED_ORIGINS",
-        "ADMIN_USERNAME",
-        "ADMIN_PASSWORD",
-        "ADMIN_EMAIL",
-        "ADMIN_FULL_NAME",
-        "STRICT_MODE",
-        "ALLOW_FACE_DEDUPICATION",
-    ]
-
     """
     顔認識システムの設定クラス。
 
@@ -149,7 +151,10 @@ class Config(BaseSettings):
     )
 
     # CORSの許可オリジン
-    ALLOWED_ORIGINS: list[str] = Field([], description="CORS許可オリジンリスト")
+    ALLOWED_ORIGINS: list[str] = Field(
+        os.getenv("ALLOWED_ORIGINS", "*"),
+        description="CORS許可オリジンリスト",
+    )
 
     # default init account
     ADMIN_USERNAME: str = Field(
@@ -175,7 +180,6 @@ class Config(BaseSettings):
     #     env_file = ".env"
     #     env_file_encoding = "utf-8"
     model_config = SettingsConfigDict(
-        env_file=(".env", ".env.dev", ".env.prod"),
         env_file_encoding="utf-8",
         extra="ignore",
     )
