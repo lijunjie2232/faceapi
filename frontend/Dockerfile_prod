@@ -1,0 +1,50 @@
+# Multi-stage build for frontend
+FROM node:24-alpine as builder
+
+# Create app directory
+WORKDIR /app
+
+# Copy package files
+COPY frontend/package*.json ./
+
+# Install dependencies
+RUN npm install -g pnpm && pnpm i
+
+# Copy source code
+COPY frontend/ .
+
+COPY frontend/.env.production .env.production
+
+# Download face detection models
+COPY frontend/scripts/download_models.js ./download_models.js
+RUN node download_models.js
+
+# Build the application
+RUN pnpm run build
+
+# Production stage with nginx
+FROM nginx:1.28-alpine
+
+# Remove default nginx configuration
+RUN rm -rf /etc/nginx/conf.d/default.conf
+
+# Copy custom nginx configuration
+COPY nginx/nginx.conf /etc/nginx/nginx.conf
+
+# Copy nginx template for dynamic configuration
+COPY nginx/templates /etc/nginx/templates
+
+# Copy built application
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
+    CMD wget --quiet --tries=1 --spider http://localhost/health || exit 1
+
+# Start nginx
+# CMD ["nginx", "-g", "daemon off;"]
+CMD ["/bin/sh", "-c", "envsubst '${NGINX_HOST},${BACKEND_HOST},${BACKEND_PORT}' < /etc/nginx/templates/default.conf.template > /etc/nginx/conf.d/default.conf && nginx -g 'daemon off;'"]
+

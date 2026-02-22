@@ -16,6 +16,8 @@ COPY backend/faceapi ./faceapi
 
 # Install Python dependencies
 RUN pip install -U setuptools
+RUN pip install torch==2.2.2 torchvision==0.17.2 torchaudio==2.2.2 --index-url https://download.pytorch.org/whl/cu121
+RUN pip install timm
 RUN pip install onnxruntime
 RUN pip install -e . -v --no-build-isolation
 
@@ -54,15 +56,16 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY backend/faceapi ./faceapi
 COPY backend/pyproject.toml ./
 
+
 # Install the package in production mode
 RUN pip install --no-cache-dir -e .
 
 # Copy model file
-# COPY test/g_m3.onnx /faceapi/model.onnx
+# COPY test/g_m3.pt /faceapi/model.pt
 RUN wget https://github.com/lijunjie2232/faceapi/releases/download/v0.1/model_s3_v1.onnx -O /faceapi/model.onnx
 
 # Change ownership
-RUN mkdir -p /faceapi/migrations && chown -R appuser:appgroup /faceapi && chmod -R 755 /faceapi/migrations
+RUN chown -R appuser:appgroup /faceapi
 
 # Switch to non-root user
 USER appuser
