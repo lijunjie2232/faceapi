@@ -1,0 +1,73 @@
+# Node modules
+node_modules/
+
+# Logs
+logs
+*.log
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# Dependency directories
+jspm_packages/
+
+# Distribution files (these will be generated during build)
+dist/  # Commented out so dist can be verified during build
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Testing
+tests/
+test/
+
+# Documentation
+*.md
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.template
+
+# Git
+.git
+.gitignore
+
+# Docker
+.dockerignore
+Dockerfile
+
+# Cache
+.cache/
+.npm/
+.yarn-cache/
+
+# Temp files
+tmp/
+temp/
+
+# Vite cache
+.vite/
+
+# Type checking
+.vuerc
+
+# Keep build verification script
+!verify-build.sh
+
+# script dir
+scripts/
