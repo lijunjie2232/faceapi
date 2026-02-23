@@ -3,7 +3,13 @@ from pathlib import PosixPath
 
 import cv2
 import numpy as np
-import torch
+from functools import partial
+
+from ..face_rec import _MODEL_
+from ..core import _CONFIG_
+
+if not _CONFIG_.MODEL_LOADER == "onnx":
+    import torch
 
 
 class FaceDetector:
@@ -132,8 +138,8 @@ def base64_to_image(base64_string: str):
     return image
 
 
-@torch.no_grad()
-def inference(net, img, device="cuda", to_array=True):
+# PyTorch 推理部分
+def inference_pytorch(net, img, device="cuda", to_array=True):
     use_cuda = device == "cuda"
     if img is None:
         img = np.random.randint(0, 255, size=(112, 112, 3), dtype=np.uint8)
@@ -145,14 +151,70 @@ def inference(net, img, device="cuda", to_array=True):
     img.div_(255).sub_(0.5).div_(0.5)
     # net.eval()
     # ampモードで推論
-    img = img.to(device)
-    net = net.to(device)
-    feat = net(img, cuda=use_cuda)
-    try:
-        feat_c = feat.cpu()
-        feat = feat_c
-    except:
-        pass
+    with torch.no_grad():
+        img = img.to(_CONFIG_.MODEL_DEVICE)
+        feat = net(img, _CONFIG_.MODEL_DEVICE)
+        try:
+            feat_c = feat.cpu()
+            feat = feat_c
+        except:
+            pass
+        if to_array:
+            feat = feat.numpy()
+        return feat.reshape(-1, _CONFIG_.MODEL_EMB_DIM)
+
+
+def preprocess_image(image):
+    """
+    画像を前処理する（ONNXモデル用）
+
+    引数:
+        image: 入力画像（numpy配列）
+
+    戻り値:
+        前処理された画像テンソル
+    """
+    img = cv2.resize(image, (112, 112))
+    img = np.transpose(img, (2, 0, 1))
+    img = np.expand_dims(img, axis=0).astype(np.float32)
+    img = img / 255.0
+    img = (img - 0.5) / 0.5
+    return img
+
+def inference_onnx(session, img, to_array=True):
+    """
+    ONNXモデルを使用して推論を行う
+
+    引数:
+        session: ONNXセッションオブジェクト
+        img: 入力画像（ファイルパス、numpy配列、またはNone）
+        to_array: 出力をnumpy配列として返すかどうか
+
+    戻り値:
+        特徴ベクトル（numpy配列またはテンソル）
+    """
+    if img is None:
+        img = np.random.randint(0, 255, size=(112, 112, 3), dtype=np.uint8)
+    elif isinstance(img, str) or isinstance(img, PosixPath):
+        img = cv2.imread(img, cv2.COLOR_BGR2RGB)
+
+    # 画像を前処理
+    input_tensor = preprocess_image(img)
+
+    # ONNXモデルで推論
+    input_name = session.get_inputs()[0].name
+    output_name = session.get_outputs()[0].name
+    result = session.run([output_name], {input_name: input_tensor})
+
+    # 結果を取得
+    feat = result[0]
+
     if to_array:
-        feat = feat.numpy()
-    return feat
+        feat = np.array(feat)
+
+    return feat.reshape(-1, _CONFIG_.MODEL_EMB_DIM)
+
+
+inference = partial(inference_onnx, _MODEL_)
+if not _CONFIG_.MODEL_LOADER == "onnx":
+    inference = partial(inference_pytorch, _MODEL_, device=_CONFIG_.MODEL_DEVICE)
