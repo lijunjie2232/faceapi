@@ -6,7 +6,7 @@ import { ElMessage } from 'element-plus';
 export class FaceUtils {
   constructor() {
     this.faceapi = null;
-    this.API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+    this.API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
     this.MODELS_PATH = import.meta.env.VITE_FACE_API_MODELS_PATH || '/models';
   }
 
