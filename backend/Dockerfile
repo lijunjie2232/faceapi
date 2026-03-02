@@ -59,7 +59,7 @@ RUN pip install --no-cache-dir -e .
 
 # Copy model file
 # COPY test/g_m3.onnx /faceapi/model.onnx
-RUN wget https://github.com/lijunjie2232/faceapi/releases/download/v0.1/model_s3_v1.onnx -O /faceapi/model.onnx
+RUN wget https://github.com/lijunjie2232/faceapi/releases/download/v1.0.0/model_s3_v1.onnx -O /faceapi/model.onnx
 
 # Change ownership
 RUN mkdir -p /faceapi/migrations && chown -R appuser:appgroup /faceapi && chmod -R 755 /faceapi/migrations
