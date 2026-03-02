@@ -103,3 +103,6 @@ migrations/
 # test & debug
 test*
 debug*
+
+# docs
+site/
