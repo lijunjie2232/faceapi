@@ -172,4 +172,3 @@ pnpm serve
 - 最初に[ドキュメント](https://lijunjie2232.github.io/faceapi/)をご確認ください
 - [GitHub Issues](https://github.com/lijunjie2232/faceapi/issues)で問題を報告
 - 一般的なトラブルシューティングについては[QUICKSTART.md](QUICKSTART.md)を参照
-
