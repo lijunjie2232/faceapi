@@ -10,6 +10,8 @@
 
 > 🚀 **Modern face recognition system built with FastAPI + Vue.js + Docker**
 
+[🎮 View Demo](https://huggingface.co/spaces/l2533584225/faceapi-demo) • [📚 Documentation](https://lijunjie2232.github.io/faceapi/)
+
 [:us: English](README.en.md) • [:jp: 日本語](README.ja.md) • [:tw: 繁體中文](README.zh-TW.md)
 
 </div>
