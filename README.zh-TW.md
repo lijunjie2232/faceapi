@@ -16,6 +16,26 @@
 
 </div>
 
+## 📸 系統截圖
+
+| 功能 | 截圖 |
+|------|------|
+| **登入頁面** - 使用者認證畫面 | <img src="fig/login.png" width="400" alt="登入畫面"> |
+| **使用者註冊** - 新增帳戶建立 | <img src="fig/signup.png" width="400" alt="註冊畫面"> |
+| **臉部驗證登入** - 快速臉部認證 | <img src="fig/face_verify_login.png" width="400" alt="臉部驗證登入"> |
+| **管理者 - 使用者清單** - 使用者管理 | <img src="fig/admin_userlist.png" width="400" alt="使用者清單"> |
+| **管理者 - 批次操作** - 大量使用者管理 | <img src="fig/admin_batch_operation.png" width="400" alt="批次操作"> |
+| **管理者 - 臉部檢測設定** - 檢測參數調整 | <img src="fig/admin_face_detector.png" width="400" alt="臉部檢測設定"> |
+| **管理者 - 臉部搜尋** - 臉部影像搜尋功能 | <img src="fig/admin_face_search.png" width="400" alt="臉部搜尋"> |
+| **管理者 - 密碼重設** - 使用者密碼管理 | <img src="fig/admin_password_reset.png" width="400" alt="密碼重設"> |
+| **管理者 - 使用者臉部重設** - 臉部影像重新註冊 | <img src="fig/admin_userface_reset.png" width="400" alt="使用者臉部重設"> |
+
+### 🎬 快速臉部驗證演示
+
+以下 GIF 展示臉部驗證登入和臉部搜尋功能：
+
+<img src="fig/face_login_demo.gif" width="600" alt="臉部驗證登入演示">
+
 ## 🌟 主要功能
 
 - 🔐 **安全認證**: 基於 JWT 的使用者認證系統

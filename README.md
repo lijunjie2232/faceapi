@@ -16,6 +16,27 @@
 
 </div>
 
+## 📸 システムスクリーンショット
+
+| 機能 | スクリーンショット |
+|------|-------------------|
+| **ログインページ** - ユーザー認証画面 | <img src="fig/login.png" width="400" alt="ログイン画面"> |
+| **ユーザー登録** - 新規アカウント作成 | <img src="fig/signup.png" width="400" alt="登録画面"> |
+| **顔検出** - リアルタイム顔認識 | <img src="fig/face _detecter.png" width="400" alt="顔検出"> |
+| **顔認証ログイン** - 顔による高速認証 | <img src="fig/face_verify_login.png" width="400" alt="顔認証ログイン"> |
+| **管理者 - ユーザー一覧** - ユーザー管理 | <img src="fig/admin_userlist.png" width="400" alt="ユーザー一覧"> |
+| **管理者 - バッチ操作** - 一括ユーザー管理 | <img src="fig/admin_batch_operation.png" width="400" alt="バッチ操作"> |
+| **管理者 - 顔検出設定** - 検出パラメータ調整 | <img src="fig/admin_face_detector.png" width="400" alt="顔検出設定"> |
+| **管理者 - 顔検索** - 顔画像検索機能 | <img src="fig/admin_face_search.png" width="400" alt="顔検索"> |
+| **管理者 - パスワードリセット** - ユーザーパスワード管理 | <img src="fig/admin_password_reset.png" width="400" alt="パスワードリセット"> |
+| **管理者 - ユーザー顔リセット** - 顔画像の再登録 | <img src="fig/admin_userface_reset.png" width="400" alt="ユーザー顔リセット"> |
+
+### 🎬 高速顔認証デモ
+
+以下の GIF は、顔認証によるログインと顔検索機能の動作を示しています：
+
+<img src="fig/face_login_demo.gif" width="600" alt="顔認証ログインデモ">
+
 ## 🌟 主な機能
 
 - 🔐 **安全な認証**: JWTベースのユーザー認証システム

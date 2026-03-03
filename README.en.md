@@ -16,6 +16,26 @@
 
 </div>
 
+## 📸 System Screenshots
+
+| Feature | Screenshot |
+|---------|------------|
+| **Login Page** - User authentication screen | <img src="fig/login.png" width="400" alt="Login page"> |
+| **User Signup** - New account creation | <img src="fig/signup.png" width="400" alt="Signup page"> |
+| **Face Verification Login** - Fast face-based authentication | <img src="fig/face_verify_login.png" width="400" alt="Face verification login"> |
+| **Admin - User List** - User management | <img src="fig/admin_userlist.png" width="400" alt="User list"> |
+| **Admin - Batch Operation** - Bulk user management | <img src="fig/admin_batch_operation.png" width="400" alt="Batch operation"> |
+| **Admin - Face Detector** - Detection parameter settings | <img src="fig/admin_face_detector.png" width="400" alt="Face detector settings"> |
+| **Admin - Face Search** - Face image search function | <img src="fig/admin_face_search.png" width="400" alt="Face search"> |
+| **Admin - Password Reset** - User password management | <img src="fig/admin_password_reset.png" width="400" alt="Password reset"> |
+| **Admin - User Face Reset** - Face image re-registration | <img src="fig/admin_userface_reset.png" width="400" alt="User face reset"> |
+
+### 🎬 Fast Face Verification Demo
+
+The following GIF demonstrates the face verification login and face search functionality:
+
+<img src="fig/face_login_demo.gif" width="600" alt="Face verification login demo">
+
 ## 🌟 Key Features
 
 - 🔐 **Secure Authentication**: JWT-based user authentication system
