@@ -16,6 +16,23 @@
 
 </div>
 
+## 🌟 Key Features
+
+- 🔐 **Secure Authentication**: JWT-based user authentication system
+- 👤 **Face Registration**: Register multiple face images per user
+- 🎯 **High-Accuracy Recognition**: Advanced face detection and identification
+- 🖼️ **Real-time Processing**: Webcam-based real-time face recognition
+- 📊 **Admin Dashboard**: Comprehensive user management interface
+- 🐳 **Docker Deployment**: Easy containerized deployment
+- 🌐 **Multi-language Support**: Available in Japanese, Traditional Chinese, and English
+- 🚀 **GPU Acceleration**: High-performance processing with GPU support
+
+## 🎮 Demo
+
+Try the system online:
+
+[🎮 View Demo](https://huggingface.co/spaces/l2533584225/faceapi-demo)
+
 ## 📚 Documentation
 
 **Comprehensive documentation is available in multiple languages:**
@@ -27,17 +44,6 @@
   - [繁體中文文檔](docs/zh-TW/)
 
 > **💡 Quick Access**: Start with [QUICKSTART.md](QUICKSTART.md) for immediate setup
-
-## 🌟 Key Features
-
-- 🔐 **Secure Authentication**: JWT-based user authentication system
-- 👤 **Face Registration**: Register multiple face images per user
-- 🎯 **High-Accuracy Recognition**: Advanced face detection and identification
-- 🖼️ **Real-time Processing**: Webcam-based real-time face recognition
-- 📊 **Admin Dashboard**: Comprehensive user management interface
-- 🐳 **Docker Deployment**: Easy containerized deployment
-- 🌐 **Multi-language Support**: Available in Japanese, Traditional Chinese, and English
-- 🚀 **GPU Acceleration**: High-performance processing with GPU support
 
 ## 🚀 Quick Start
 
