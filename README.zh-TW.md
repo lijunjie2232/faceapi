@@ -6,7 +6,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg)](https://vuejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-blue.svg)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 > 🚀 **基於 FastAPI + Vue.js + Docker 建構的現代化臉部辨識系統**
 
@@ -191,7 +191,7 @@ pnpm serve
 
 ## 📄 授權
 
-本專案採用 MIT 授權 - 詳情請見 [LICENSE](LICENSE) 檔案。
+本專案採用 GNU General Public License v3.0 授權 - 詳情請見 [LICENSE](LICENSE) 檔案。
 
 ## 🆘 支援
 

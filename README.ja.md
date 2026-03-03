@@ -6,7 +6,7 @@
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.68+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue.js](https://img.shields.io/badge/Vue.js-3.x-brightgreen.svg)](https://vuejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-20.10+-blue.svg)](https://www.docker.com/)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-GPLv3-blue.svg)](LICENSE)
 
 > 🚀 **FastAPI + Vue.js + Dockerで構築された現代的な顔認識システム**
 
@@ -189,7 +189,7 @@ pnpm serve
 
 ## 📄 ライセンス
 
-このプロジェクトはMITライセンスの下でライセンスされています - 詳細は[LICENSE](LICENSE)ファイルをご覧ください。
+このプロジェクトは GNU General Public License v3.0 の下でライセンスされています - 詳細は [LICENSE](LICENSE) ファイルをご覧ください。
 
 ## 🆘 サポート
 
